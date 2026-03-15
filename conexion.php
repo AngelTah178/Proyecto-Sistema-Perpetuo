@@ -1,14 +1,14 @@
 <?php
-$host = "localhost";       
-$user = "root";            
-$pass = "";                
-$db   = "NOMBRE DE LA BASE DE DATOS"; 
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "inventario";
 
-$conexion = new mysqli($host, $user, $pass, $db);
-
-if ($conexion->connect_error) {
-    die("Error de conexión: " . $conexion->connect_error);
+#creamos la conexion
+$conn = new mysqli($serverame, $username, $password, $dbname);
+#check the connection
+if ($conn->connect_error) {
+    die("connection failed: " . $conn->connect_error);
 }
-
-$conexion->set_charset("utf8");
+echo "connected successfully";
 ?>
