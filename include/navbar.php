@@ -32,11 +32,11 @@
     <nav class="navbar navbar-expand-lg fixed-top" style="background-color: #fff; border-radius: 40px; margin: 20px auto; width: 90%; padding: 0.5rem 2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" data-bs-theme="light">
 
       <div class="container-fluid">
-      <!--
+      
         <a class="navbar-brand d-flex align-items-center" href="<?= $base ?>/index.php">
-          <img src="<?= $base ?>/assets/logo.png" alt="logo" width="200" class="me-2">
+          <img src="<?= $base ?>/Assets/Logo.png" alt="logo" width="250" class="me-2">
         </a>
-      -->
+      
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
@@ -44,15 +44,16 @@
 
         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul class="navbar-nav align-items-center">
-            <li class="nav-item"><a class="nav-link" href="<?= $base ?>/aboutus.php">Acerca de nosotros</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= $base ?>/catalogo.php">Catálogo</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= $base ?>/servicios.php">Servicios</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= $base ?>/contacto.php">Contacto</a></li>
-
+            <!--
+              <li class="nav-item"><a class="nav-link" href="<?= $base ?>/aboutus.php">Acerca de nosotros</a></li>
+              <li class="nav-item"><a class="nav-link" href="<?= $base ?>/catalogo.php">Catálogo</a></li>
+              <li class="nav-item"><a class="nav-link" href="<?= $base ?>/servicios.php">Servicios</a></li>
+              <li class="nav-item"><a class="nav-link" href="<?= $base ?>/contacto.php">Contacto</a></li>
+            -->
             <?php if (isset($_SESSION['logueado']) && $_SESSION['logueado'] === true): ?>
 
             <li class="nav-item">
-              <a class="btn ms-2" style="background-color:#0d2b3e; color:#fff; border-radius:10px; padding:8px 20px; font-weight:600;" href="<?= $base ?>/user/perfil.php">
+              <a class="btn ms-2" style="background-color:#0d2b3e; color:#fff; border-radius:10px; padding:8px 20px; font-weight:600;" href="<?= $base ?>/Admin/editarPerfil.php">
                 Mi Perfil
               </a>
             </li>

@@ -1,19 +1,24 @@
 <?php
-session_start();
-include "conexion.php";
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+  session_start();
+  include "conexion.php";
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
     header("Location: index.php");
     exit;
-}
+  }
 ?>
-<html>
 
-<head>
+<html>
+  <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-</head>
+  </head>
 
-<body>
+  <body>
+
+    <?php include 'include/navbar.php'; ?>
+
+
+    <br><br><br><br><br><br><br><br>
     <!--Un botón sencillo que redirija a registrar user-->
     <!--Vamos por partes y actos, ACTO 1 - REGISTRAR EMPLEADO-->
     <button class="btn btn-primary" onclick="window.location.href='register.php'">Registrar usuario</button>
@@ -23,6 +28,5 @@ if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
     <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">Usuarios</button>
     <button class="btn btn-secondary" onclick="window.location.href='inventario.php'">Gestionar productos</button>
 
-</body>
-
+  </body>
 </html>
