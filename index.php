@@ -8,5 +8,10 @@
     <!--Vamos por partes y actos, ACTO 1 - REGISTRAR EMPLEADO-->
     <button class="btn btn-primary" onclick="window.location.href='register.php'">Registrar usuario</button>
     <title>Angel es puto y duerme solo</title>
+
+    <!--Estos son los botones con las acciones del administrador Angel es un administrador-->
+    <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">Usuarios</button>
+    <button class="btn btn-secondary" onclick="window.location.href='inventario.php'">Gestionar productos</button>
+
   </body>
 </html>
