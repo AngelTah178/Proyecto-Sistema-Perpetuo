@@ -26,6 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $_SESSION["ID_USUARIO"] = $usuario["ID_USUARIO"];
       $_SESSION["NOMBRE"] = $usuario["NOMBRE"];
       $_SESSION["CORREO"] = $usuario["CORREO"];
+      $_SESSION["ROL"] = $usuario["ROL"];
       $_SESSION["logueado"] = true;
 
       header("Location: index.php");
