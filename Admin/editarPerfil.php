@@ -2,14 +2,14 @@
   session_start();
   require_once "../conexion.php";
 
-  if (!isset($_SESSION['ROL']) || $_SESSION['ROL'] !== 'Admin') {
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
     header("Location: ../login.php");
     exit();
   }
 
   $id = $_SESSION['ID_USUARIO'];
 
-  $stmt = $conexion->prepare("SELECT id, nombre, correo, ROL FROM usuarios WHERE id = ?");
+  $stmt = $conn->prepare("SELECT ID_USUARIO, NOMBRE, CORREO, ROL FROM usuarios WHERE ID_USUARIO = ?");
   $stmt->bind_param("i", $id);
   $stmt->execute();
   $result = $stmt->get_result();
@@ -114,22 +114,22 @@
       }
     </style>
   </head>
-    
+
   <body>
 
     <div class="form-container">
       <h2 class="text-center">Editar Perfil</h2>
       <form action="procesar_editar_usuario.php" method="POST" id="formEditar">
-        <input type="hidden" name="id" value="<?= $usuario['id'] ?>">
+        <input type="hidden" name="id" value="<?= $usuario['ID_USUARIO'] ?>">
 
         <div class="mb-4">
           <label for="nombre" class="form-label">Nombre:</label>
-          <input type="text" id="nombre" name="nombre" class="form-control" value="<?= htmlspecialchars($usuario['nombre']) ?>" required>
+          <input type="text" id="nombre" name="nombre" class="form-control" value="<?= htmlspecialchars($usuario['NOMBRE']) ?>" required>
         </div>
 
         <div class="mb-4">
           <label for="correo" class="form-label">Email:</label>
-          <input type="correo" id="correo" name="correo" class="form-control" value="<?= htmlspecialchars($usuario['correo']) ?>" required>
+          <input type="correo" id="correo" name="correo" class="form-control" value="<?= htmlspecialchars($usuario['CORREO']) ?>" required>
         </div>
 
         <div class="mb-4">
@@ -146,7 +146,7 @@
 
         <div class="d-flex justify-content-between">
           <button type="submit" class="btn btn-success" onclick="return confirm('¿Estás seguro de guardar cambios?');">Guardar cambios</button>
-          <a href="panel_administrador.php" class="btn btn-cancel">Cancelar</a>
+          <a href="index.php" class="btn btn-cancel">Cancelar</a>
         </div>
       </form>
     </div>
