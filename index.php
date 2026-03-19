@@ -1,34 +1,36 @@
 <?php
-  session_start();
-  include "conexion.php";
-  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-    header("Location: index.php");
-    exit;
-  }
+session_start();
+include "conexion.php";
+if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+  header("Location: login.php");
+  exit;
+}
 ?>
 
 <html>
-  <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  </head>
 
-  <body>
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
 
-    <?php include 'include/navbar.php'; ?>
+<body>
+
+  <?php include 'include/navbar.php'; ?>
 
 
-    <br><br><br><br><br><br><br><br>
-    <!--Un botón sencillo que redirija a registrar user-->
-    <!--Vamos por partes y actos, ACTO 1 - REGISTRAR EMPLEADO-->
-    <title>Home</title>
+  <br><br><br><br><br><br><br><br>
+  <!--Un botón sencillo que redirija a registrar user-->
+  <!--Vamos por partes y actos, ACTO 1 - REGISTRAR EMPLEADO-->
+  <title>Home</title>
 
-    <!--Estos son los botones con las acciones del administrador Angel es un administrador-->
-    <button class="btn btn-primary" onclick="window.location.href='register.php'">Registrar usuario</button>
+  <!--Estos son los botones con las acciones del administrador Angel es un administrador-->
+  <button class="btn btn-primary" onclick="window.location.href='register.php'">Registrar usuario</button>
 
-    <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">Usuarios</button>
+  <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">Usuarios</button>
 
-    <button class="btn btn-secondary" onclick="window.location.href='inventario.php'">Gestionar productos</button>
+  <button class="btn btn-secondary" onclick="window.location.href='inventario.php'">Gestionar productos</button>
 
-  </body>
+</body>
+
 </html>

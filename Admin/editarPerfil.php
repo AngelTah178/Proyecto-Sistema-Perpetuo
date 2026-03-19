@@ -1,166 +1,179 @@
 <?php
-  session_start();
-  require_once "../conexion.php";
+session_start();
+require_once "../conexion.php";
 
-  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-    header("Location: ../login.php");
+#credenciales de inicio de sesión
+if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+  header("Location: ../login.php");
+  exit();
+}
+
+$id = $_SESSION['ID_USUARIO'];
+
+#procesar edición
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+  $nombre = $_POST["nombre"];
+  $correo = $_POST["correo"];
+  $clave = $_POST["clave"];
+  $clave_confirmar = $_POST["clave_confirmar"];
+
+  # Validar contraseñas
+  if (!empty($clave) && $clave !== $clave_confirmar) {
+    echo "Las contraseñas no coinciden";
     exit();
   }
 
-  $id = $_SESSION['ID_USUARIO'];
+  # nueva contraseña
+  if (!empty($clave)) {
 
-  $stmt = $conn->prepare("SELECT ID_USUARIO, NOMBRE, CORREO, ROL FROM usuarios WHERE ID_USUARIO = ?");
-  $stmt->bind_param("i", $id);
+    $claveHash = password_hash($clave, PASSWORD_DEFAULT);
+
+    $stmt = $conn->prepare("
+      UPDATE usuarios 
+      SET NOMBRE = ?, CORREO = ?, CONTRASEÑA = ?
+      WHERE ID_USUARIO = ?
+    ");
+    $stmt->bind_param("sssi", $nombre, $correo, $claveHash, $id);
+
+  } else {
+
+    # stmt sin actualizar contraseña
+    $stmt = $conn->prepare("
+      UPDATE usuarios 
+      SET NOMBRE = ?, CORREO = ?
+      WHERE ID_USUARIO = ?
+    ");
+    $stmt->bind_param("ssi", $nombre, $correo, $id);
+  }
+
   $stmt->execute();
-  $result = $stmt->get_result();
 
-  if($result->num_rows == 0){
-    echo "Usuario no encontrado";
-    exit();
-  }
+  # Redirigir después de guardar
+  header("Location: ../index.php");
+  exit();
+}
 
-  $usuario = $result->fetch_assoc();
+#datos usuario
+$stmt = $conn->prepare("SELECT ID_USUARIO, NOMBRE, CORREO, ROL FROM usuarios WHERE ID_USUARIO = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows == 0) {
+  echo "Usuario no encontrado";
+  exit();
+}
+
+$usuario = $result->fetch_assoc();
 ?>
 
+<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <title>Editar Usuario</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-      body {
-        background-image: url('../assets/fondo-form.jpg');
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center; 
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0; 
-        box-sizing: border-box; 
-      }
 
-      nav {
-        background-color: #0557a3ff;
-      }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar Usuario</title>
 
-      .btn-cerrar {
-        color: #0557a3ff;
-        background-color: #f0f4f8;
-        font-weight: bold;
-      }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-      .btn-cerrar:hover {
-        background-color: white;
-      }
+<style>
+body {
+  background-image: url('../assets/fondo-form.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
 
-      h2 {
-        color: #0557a3ff;
-        font-weight: bold;
-        margin-top: 15px;
-        margin-bottom: 15px;
-      }
+.form-container {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+}
 
-      .form-container {
-        background-color: white;
-        border-radius: 12px;
-        padding: 30px;
-        max-width: 600px;
-        width: 100%;
-        flex: 0 0 auto;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      }
+h2 {
+  text-align: center;
+  color: #0557a3;
+}
 
-      label {
-        font-weight: 500;
-        color: #063965ff;
-      }
+.btn-submit {
+  background-color: #0557a3;
+  color: white;
+}
 
-      input.form-control {
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        padding: 8px 12px;
-      }
+.btn-submit:hover {
+  background-color: #063965;
+}
+</style>
+</head>
 
-      input.form-control:focus {
-        border-color: #0557a3ff;
-        box-shadow: 0 0 5px rgba(5,87,163,0.3);
-      }
+<body>
 
-      .btn-submit {
-        background-color: #0557a3ff;
-        color: white;
-        font-weight: bold;
-      }
+<div class="form-container">
 
-      .btn-submit:hover {
-        background-color: #063965ff;
-        color: white;
-      }
+<h2>Editar Perfil</h2>
 
-      .btn-cancel {
-        background-color: #dc3545;
-        color: white;
-        font-weight: bold;
-      }
+<form method="POST" id="formEditar">
 
-      .btn-cancel:hover {
-        background-color: #c82333;
-        color: white;
-      }
-    </style>
-  </head>
+<div class="mb-3">
+<label>Nombre</label>
+<input type="text" name="nombre" class="form-control"
+value="<?= htmlspecialchars($usuario['NOMBRE']) ?>" required>
+</div>
 
-  <body>
+<div class="mb-3">
+<label>Correo</label>
+<input type="email" name="correo" class="form-control"
+value="<?= htmlspecialchars($usuario['CORREO']) ?>" required>
+</div>
 
-    <div class="form-container">
-      <h2 class="text-center">Editar Perfil</h2>
-      <form action="procesar_editar_usuario.php" method="POST" id="formEditar">
-        <input type="hidden" name="id" value="<?= $usuario['ID_USUARIO'] ?>">
+<div class="mb-3">
+<label>Contraseña nueva</label>
+<input type="password" name="clave" id="clave" class="form-control">
+</div>
 
-        <div class="mb-4">
-          <label for="nombre" class="form-label">Nombre:</label>
-          <input type="text" id="nombre" name="nombre" class="form-control" value="<?= htmlspecialchars($usuario['NOMBRE']) ?>" required>
-        </div>
+<div class="mb-3">
+<label>Confirmar contraseña</label>
+<input type="password" name="clave_confirmar" id="clave_confirmar" class="form-control">
+</div>
 
-        <div class="mb-4">
-          <label for="correo" class="form-label">Email:</label>
-          <input type="correo" id="correo" name="correo" class="form-control" value="<?= htmlspecialchars($usuario['CORREO']) ?>" required>
-        </div>
+<input type="hidden" name="ROL" value="<?= $usuario['ROL'] ?>">
 
-        <div class="mb-4">
-          <label for="clave" class="form-label">Contraseña nueva:</label>
-          <input type="password" id="clave" name="clave" class="form-control">
-        </div>
+<div class="d-flex justify-content-between">
 
-        <div class="mb-4">
-          <label for="clave_confirmar" class="form-label">Confirmar contraseña:</label>
-          <input type="password" id="clave_confirmar" name="clave_confirmar" class="form-control">
-        </div>
+<button type="submit" class="btn btn-submit"
+onclick="return confirm('¿Guardar cambios?');">
+Guardar cambios
+</button>
 
-        <input type="hidden" name="ROL" value="<?= $usuario['ROL'] ?>">
+<a href="../index.php" class="btn btn-danger">
+Cancelar
+</a>
 
-        <div class="d-flex justify-content-between">
-          <button type="submit" class="btn btn-success" onclick="return confirm('¿Estás seguro de guardar cambios?');">Guardar cambios</button>
-          <a href="index.php" class="btn btn-cancel">Cancelar</a>
-        </div>
-      </form>
-    </div>
+</div>
 
-    <script>
-      document.getElementById('formEditar').addEventListener('submit', function(e){
-        const clave = document.getElementById('clave').value;
-        const claveConfirmar = document.getElementById('clave_confirmar').value;
-        if(clave !== "" && clave !== claveConfirmar){
-          alert("Las contraseñas no coinciden.");
-          e.preventDefault();
-        }
-      });
-    </script>
+</form>
 
-  </body>
+</div>
+
+<script>
+document.getElementById('formEditar').addEventListener('submit', function(e){
+  const clave = document.getElementById('clave').value;
+  const confirmar = document.getElementById('clave_confirmar').value;
+
+  if (clave !== "" && clave !== confirmar) {
+    alert("Las contraseñas no coinciden");
+    e.preventDefault();
+  }
+});
+</script>
+
+</body>
 </html>
