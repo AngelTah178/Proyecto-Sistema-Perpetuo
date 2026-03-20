@@ -9,7 +9,7 @@ if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
 #obtenemos el rol desde la sesión
 $rol = $_SESSION['ROL'] ?? '';
 #validamos si es un admin
-if ($rol != "admin") {
+if ($rol != "admin" && $rol != "empleado") {
     echo "Acceso denegado. Solo admninistradores";
     exit();
 }

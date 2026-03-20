@@ -25,9 +25,17 @@ if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
   <title>Home</title>
 
   <!--Estos son los botones con las acciones del administrador Angel es un administrador-->
-  <button class="btn btn-primary" onclick="window.location.href='register.php'">Registrar usuario</button>
+  <?php if ($_SESSION['ROL'] === 'admin'): ?>
 
-  <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">Usuarios</button>
+    <button class="btn btn-primary" onclick="window.location.href='register.php'">
+      Registrar usuario
+    </button>
+
+    <button class="btn btn-secondary" onclick="window.location.href='empleados.php'">
+      Usuarios
+    </button>
+
+  <?php endif; ?>
 
   <button class="btn btn-secondary" onclick="window.location.href='inventario.php'">Gestionar productos</button>
 
