@@ -33,17 +33,17 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>PRODUCTO_ID</th>
                 <th>CODIGO_BARRAS</th>
                 <th>SKU</th>
                 <th>NOMBRE</th>
                 <th>DESCRIPCION</th>
                 <th>PRECIO</th>
                 <th>FECHA_REGISTRO</th>
-                <th>LOTE_ID</th>
-                <th>MARCA_ID</th>
-                <th>CATEGORIA_ID</th>
-                <th>PROVEEDOR_ID</th>
+                <th>LOTE</th>
+                <th>MARCA</th>
+                <th>CATEGORIA</th>
+                <th>PROVEEDOR</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -51,14 +51,12 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
             <?php foreach ($productos as $p): ?>
                 <tr>
                     <td>
-                        <?php echo $p['PRODUCTO_ID']; ?>
-                    </td>
-                    <td>
                         <?php echo $p['CODIGO_BARRAS']; ?>
                     </td>
                     <td>
                         <?php echo $p['SKU']; ?>
                     </td>
+
                     <td>
                         <?php echo $p['NOMBRE']; ?>
                     </td>
@@ -72,20 +70,23 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
                         <?php echo $p['FECHA_REGISTRO']; ?>
                     </td>
                     <td>
-                        <?php echo $p['LOTE_ID']; ?>
+                        <?php echo $p['LOTE']; ?>
                     </td>
                     <td>
-                        <?php echo $p['MARCA_ID']; ?>
+                        <?php echo $p['MARCA']; ?>
                     </td>
                     <td>
-                        <?php echo $p['CATEGORIA_ID']; ?>
+                        <?php echo $p['CATEGORIA']; ?>
                     </td>
                     <td>
-                        <?php echo $p['PROVEEDOR_ID']; ?>
+                        <?php echo $p['PROVEEDOR']; ?>
                     </td>
+
                     <td>
-                        <button class="btn btn-danger" onclick="window.location.href='empleado.php'">Consultar</button>
+                        <button class="btn btn-secondary">Editar</button>
+                        <button class="btn btn-danger">Eliminar</button>
                     </td>
+
                 </tr>
             <?php endforeach; ?>
         </tbody>
