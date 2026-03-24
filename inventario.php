@@ -14,10 +14,55 @@ if ($rol != "admin" && $rol != "empleado") {
     exit();
 }
 
-$query = $conn->prepare("SELECT * FROM productos");
-$query->execute();
-$result = $query->get_result();
-$productos = $result->fetch_all(MYSQLI_ASSOC);
+$query = $conn->query("
+SELECT 
+    p.*,
+    m.NOMBRE AS MARCA,
+    c.NOMBRE AS CATEGORIA,
+    pr.NOMBRE AS PROVEEDOR,
+    l.LOTE_ID
+FROM productos p
+LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
+");
+$productos = $query->fetch_all(MYSQLI_ASSOC);
+
+# LOTES
+$lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+
+# MARCAS
+$marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+
+# CATEGORIAS
+$categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+
+# PROVEEDORES
+$proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"];
+    $SKU = $_POST["SKU"];
+    $NOMBRE = $_POST["NOMBRE"];
+    $DESCRIPCION = $_POST["DESCRIPCION"];
+    $PRECIO = $_POST["PRECIO"];
+    $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"];
+    $LOTE_ID = $_POST["LOTE_ID"];
+    $MARCA_ID = $_POST["MARCA_ID"];
+    $CATEGORIA_ID = $_POST["CATEGORIA_ID"];
+    $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"];
+
+    $stmt = $conn->prepare("INSERT INTO productos (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssdsiiii", $CODIGO_BARRAS, $SKU, $NOMBRE, $DESCRIPCION, $PRECIO, $FECHA_REGISTRO, $LOTE_ID, $MARCA_ID, $CATEGORIA_ID, $PROVEEDOR_ID);
+    if ($stmt->execute()) {
+        $mensaje = "Producto agregado correctamente";
+        exit();
+    } else {
+        $mensaje = "Error al agregar producto: " . $query;
+    }
+}
+
 ?>
 <html>
 
@@ -42,7 +87,7 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
         <div class="modal-dialog">
             <div class="modal-content">
 
-                <form action="AgregarProducto.php" method="POST">
+                <form method="POST">
 
                     <div class="modal-header">
                         <h5 class="modal-title">Agregar producto</h5>
@@ -53,7 +98,7 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
 
                         <div class="mb-3">
                             <label style="color:black;">Código de barras</label>
-                            <input type="text" name="CODIGO_BARRAS" class="form-control" required>
+                            <input type="text" name="CODIGO_BARRAS" class="form-control" autofocus required>
                         </div>
 
                         <div class="mb-3">
@@ -83,22 +128,51 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
 
                         <div class="mb-3">
                             <label style="color:black;">Lote</label>
-                            <input type="text" name="LOTE" class="form-control">
+                            <select name="LOTE_ID" class="form-control" required>
+                                <option value="">Selecciona un lote</option>
+                                <?php while ($l = $lotes->fetch_assoc()): ?>
+                                    <option value="<?= $l['LOTE_ID'] ?>">
+                                        Lote
+                                        <?= $l['LOTE_ID'] ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
                         </div>
 
                         <div class="mb-3">
                             <label style="color:black;">Marca</label>
-                            <input type="text" name="MARCA" class="form-control">
+                            <select name="MARCA_ID" class="form-control" required>
+                                <option value="">Selecciona una marca</option>
+                                <?php while ($m = $marcas->fetch_assoc()): ?>
+                                    <option value="<?= $m['MARCA_ID'] ?>">
+                                        <?= $m['NOMBRE'] ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
                         </div>
 
                         <div class="mb-3">
                             <label style="color:black;">Categoría</label>
-                            <input type="text" name="CATEGORIA" class="form-control">
+                            <select name="CATEGORIA_ID" class="form-control" required>
+                                <option value="">Selecciona una categoría</option>
+                                <?php while ($c = $categorias->fetch_assoc()): ?>
+                                    <option value="<?= $c['CATEGORIA_ID'] ?>">
+                                        <?= $c['NOMBRE'] ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
                         </div>
 
                         <div class="mb-3">
                             <label style="color:black;">Proveedor</label>
-                            <input type="text" name="PROVEEDOR" class="form-control">
+                            <select name="PROVEEDOR_ID" class="form-control" required>
+                                <option value="">Selecciona un proveedor</option>
+                                <?php while ($p = $proveedores->fetch_assoc()): ?>
+                                    <option value="<?= $p['PROVEEDOR_ID'] ?>">
+                                        <?= $p['NOMBRE'] ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
                         </div>
 
                     </div>
@@ -162,7 +236,7 @@ $productos = $result->fetch_all(MYSQLI_ASSOC);
                         <?php echo $p['FECHA_REGISTRO']; ?>
                     </td>
                     <td>
-                        <?php echo $p['LOTE']; ?>
+                        <?php echo $p['LOTE_ID']; ?>
                     </td>
                     <td>
                         <?php echo $p['MARCA']; ?>
