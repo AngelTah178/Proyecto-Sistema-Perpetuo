@@ -250,7 +250,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <td>
                         <button class="btn btn-secondary">Editar</button>
-                        <button class="btn btn-danger">Eliminar</button>
+                        <a class='boton' href='EliminarProducto.php?PRODUCTO_ID={$row['PRODUCTO_ID']}'>Eliminar</a>
                     </td>
 
                 </tr>
