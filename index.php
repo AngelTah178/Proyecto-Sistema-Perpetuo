@@ -75,123 +75,7 @@
   <body>
 
     <?php include 'include/navbar.php'; ?>
-
-    <!--Primera parte del CRUD, mostrar productos del inventario-->
-    <br><br><br><br><br>
-
-    <div class="contenedorNuevo">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalProducto">
-            Agregar producto
-        </button>
-    </div>
-
-    <!--Este es un modal que nos ayudará a pasarle datos al php-->
-    <div class="modal fade" id="modalProducto" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <form method="POST">
-
-                    <div class="modal-header">
-                        <h5 class="modal-title">Agregar producto</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-
-                    <div class="modal-body">
-
-                        <div class="mb-3">
-                            <label style="color:black;">Código de barras</label>
-                            <input type="text" name="CODIGO_BARRAS" class="form-control" autofocus required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">SKU</label>
-                            <input type="text" name="SKU" class="form-control">
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Nombre</label>
-                            <input type="text" name="NOMBRE" class="form-control" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Descripción</label>
-                            <input type="text" name="DESCRIPCION" class="form-control">
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Precio</label>
-                            <input type="number" name="PRECIO" class="form-control" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Fecha de registro</label>
-                            <input type="date" name="FECHA_REGISTRO" class="form-control" required>
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label style="color:black;">Lote</label>
-                            <select name="LOTE_ID" class="form-control" required>
-                                <option value="">Selecciona un lote</option>
-                                <?php while ($l = $lotes->fetch_assoc()): ?>
-                                    <option value="<?= $l['LOTE_ID'] ?>">
-                                        Lote
-                                        <?= $l['LOTE_ID'] ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Marca</label>
-                            <select name="MARCA_ID" class="form-control" required>
-                                <option value="">Selecciona una marca</option>
-                                <?php while ($m = $marcas->fetch_assoc()): ?>
-                                    <option value="<?= $m['MARCA_ID'] ?>">
-                                        <?= $m['NOMBRE'] ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Categoría</label>
-                            <select name="CATEGORIA_ID" class="form-control" required>
-                                <option value="">Selecciona una categoría</option>
-                                <?php while ($c = $categorias->fetch_assoc()): ?>
-                                    <option value="<?= $c['CATEGORIA_ID'] ?>">
-                                        <?= $c['NOMBRE'] ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label style="color:black;">Proveedor</label>
-                            <select name="PROVEEDOR_ID" class="form-control" required>
-                                <option value="">Selecciona un proveedor</option>
-                                <?php while ($p = $proveedores->fetch_assoc()): ?>
-                                    <option value="<?= $p['PROVEEDOR_ID'] ?>">
-                                        <?= $p['NOMBRE'] ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    </div>
-
-                </form>
-
-            </div>
-        </div>
-    </div>
-
+    
     <div class="container mt-4">
 
       <!-- BIENVENIDA -->
@@ -239,7 +123,7 @@
       <div class="card shadow-sm p-4">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Usuarios 👥</h4>
+          <h4>Gestión de Usuarios</h4>
 
           <button class="btn btn-custom" onclick="window.location.href='register.php'">
             <i class="bi bi-person-plus"></i> Registrar usuario
@@ -308,12 +192,10 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4>Gestión de Productos</h4>
 
-          <button class="btn btn-custom" onclick="window.location.href='Agregarproducto.php'">
+          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
             Registrar producto
           </button>
         </div>
-
-        <!-- FORMULARIO -->
 
         <!-- BUSCADOR -->
         <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
@@ -368,6 +250,107 @@
               <?php endforeach; ?>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!--Este es un modal que nos ayudará a pasarle datos al php-->
+    <div class="modal fade" id="modalProducto" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="POST">
+
+            <div class="modal-header">
+              <h5 class="modal-title">Agregar producto</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <div class="mb-3">
+                <label style="color:black;">Código de barras</label>
+                <input type="text" name="CODIGO_BARRAS" class="form-control" autofocus required>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">SKU</label>
+              <input type="text" name="SKU" class="form-control">
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Nombre</label>
+              <input type="text" name="NOMBRE" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Descripción</label>
+              <input type="text" name="DESCRIPCION" class="form-control">
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Precio</label>
+              <input type="number" name="PRECIO" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Fecha de registro</label>
+              <input type="date" name="FECHA_REGISTRO" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Lote</label>
+              <select name="LOTE_ID" class="form-control" required>
+                <option value="">Selecciona un lote</option>
+                <?php while ($l = $lotes->fetch_assoc()): ?>
+                <option value="<?= $l['LOTE_ID'] ?>">
+                  Lote
+                  <?= $l['LOTE_ID'] ?>
+                </option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Marca</label>
+              <select name="MARCA_ID" class="form-control" required>
+                <option value="">Selecciona una marca</option>
+                <?php while ($m = $marcas->fetch_assoc()): ?>
+                <option value="<?= $m['MARCA_ID'] ?>">
+                  <?= $m['NOMBRE'] ?>
+                </option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Categoría</label>
+              <select name="CATEGORIA_ID" class="form-control" required>
+                <option value="">Selecciona una categoría</option>
+                <?php while ($c = $categorias->fetch_assoc()): ?>
+                <option value="<?= $c['CATEGORIA_ID'] ?>">
+                  <?= $c['NOMBRE'] ?>
+                </option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label style="color:black;">Proveedor</label>
+              <select name="PROVEEDOR_ID" class="form-control" required>
+                <option value="">Selecciona un proveedor</option>
+                <?php while ($p = $proveedores->fetch_assoc()): ?>
+                <option value="<?= $p['PROVEEDOR_ID'] ?>">
+                  <?= $p['NOMBRE'] ?>
+                </option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Guardar</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>
