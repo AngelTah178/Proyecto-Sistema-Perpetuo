@@ -47,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
   <meta charset="UTF-8">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="CSS/login.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar sesión</title>
   <style>
@@ -61,8 +62,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <body style="background-image: url('assets/inicioreg.jpg'); background-repeat: no-repeat; background-size: cover;">
   <div class="container d-flex justify-content-center align-items-center mt-5" style="min-height: 90vh; ">
-    <div class="card p-5 shadow" style="max-width: 450px; width: 100%; border-radius: 15px; border: 3px solid #ffffff;">
-      <h3 class="fw-bold text-center mb-4" style="color:#0d2b3e;">
+    <div class="card p-5 shadow login-card">
+      <div class="text-center mb-3">
+        <img src="Assets/Logo.png" width="250">
+      </div>
+      <h3 class="text-center mb-4 login-title">
         Iniciar sesión
       </h3>
 
@@ -82,16 +86,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <form method="POST">
         <div class="mb-3">
           <label class="form-label fw-semibold" style="color:#0d2b3e;">Nombre:</label>
-          <input type="text" name="NOMBRE" class="form-control" required style="border:2px solid #0d2b3e;">
+          <input type="text" name="NOMBRE" class="form-control" required>
         </div>
 
         <div class="mb-3">
           <label class="form-label fw-semibold" style="color:#0d2b3e;">Contraseña:</label>
-          <input type="password" name="CONTRASEÑA" class="form-control" required style="border:2px solid #0d2b3e;">
+          <input type="password" name="CONTRASEÑA" class="form-control" required>
         </div>
 
         <div class="d-flex justify-content-center">
-          <button class="btn" style="background-color:#0d2b3e; color:white; font-weight:600; width:100%;">
+          <button class="btn btn-login w-100">
             Entrar
           </button>
         </div>
