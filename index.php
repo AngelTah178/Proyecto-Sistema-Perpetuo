@@ -55,7 +55,7 @@
     $stmt->bind_param("ssssdsiiii", $CODIGO_BARRAS, $SKU, $NOMBRE, $DESCRIPCION, $PRECIO, $FECHA_REGISTRO, $LOTE_ID, $MARCA_ID, $CATEGORIA_ID, $PROVEEDOR_ID);
     if ($stmt->execute()) {
       $mensaje = "Producto agregado correctamente";
-      exit();
+      header("index.php");
     } else {
       $mensaje = "Error al agregar producto: " . $query;
     }
@@ -288,7 +288,7 @@
 
                 <td class="text-center">
 
-                  <button class="btn btn-sm btn-warning" onclick="window.location.href='editar_usuario.php?id=<?= $u['ID_USUARIO']; ?>'">
+                  <button class="btn btn-sm btn-warning" onclick="window.location.href='editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
                     <i class="bi bi-pencil"></i>
                   </button>
 
@@ -302,6 +302,19 @@
             </tbody>
           </table>
         </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4>Gestión de Productos</h4>
+
+          <button class="btn btn-custom" onclick="window.location.href='Agregarproducto.php'">
+            Registrar producto
+          </button>
+        </div>
+
+        <!-- FORMULARIO -->
+
+        <!-- BUSCADOR -->
+        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
 
         <div class="table-responsive">
           <table class="table table-hover align-middle">
@@ -325,22 +338,22 @@
 
             <tbody>
               <?php $contador = 1; ?>
-              <?php foreach ($usuarios as $u): ?>
+              <?php foreach ($productos as $p): ?>
               <tr>
                 <td><?= $contador++; ?></td>
-                <td><?= $u['CODIGO_BARRAS']; ?></td>
-                <td><?= $u['SKU']; ?></td>
-                <td><?= $u['NOMBRE']; ?></td>
-                <td><?= $u['DESCRIPCION']; ?></td>
-                <td><?= $u['PRECIO']; ?></td>
-                <td><?= $u['FECHA_REGISTRO']; ?></td>
-                <td><?= $u['LOTE']; ?></td>
-                <td><?= $u['MARCA']; ?></td>
-                <td><?= $u['CATEGORIA']; ?></td>
-                <td><?= $u['PROVEEDOR']; ?></td>
+                <td><?= $p['CODIGO_BARRAS']; ?></td>
+                <td><?= $p['SKU']; ?></td>
+                <td><?= $p['NOMBRE']; ?></td>
+                <td><?= $p['DESCRIPCION']; ?></td>
+                <td><?= $p['PRECIO']; ?></td>
+                <td><?= $p['FECHA_REGISTRO']; ?></td>
+                <td><?= $p['LOTE_ID']; ?></td>
+                <td><?= $p['MARCA']; ?></td>
+                <td><?= $p['CATEGORIA']; ?></td>
+                <td><?= $p['PROVEEDOR']; ?></td>
 
                 <td class="text-center">
-                  <button class="btn btn-sm btn-warning" onclick="window.location.href='editar_usuario.php?id=<?= $u['ID_USUARIO']; ?>'">
+                  <button class="btn btn-sm btn-warning" onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
                     <i class="bi bi-pencil"></i>
                   </button>
 
