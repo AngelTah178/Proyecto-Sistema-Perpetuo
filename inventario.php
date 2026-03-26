@@ -57,8 +57,14 @@
     $stmt = $conn->prepare("INSERT INTO productos (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssdsiiii", $CODIGO_BARRAS, $SKU, $NOMBRE, $DESCRIPCION, $PRECIO, $FECHA_REGISTRO, $LOTE_ID, $MARCA_ID, $CATEGORIA_ID, $PROVEEDOR_ID);
     if ($stmt->execute()) {
+<<<<<<< Updated upstream
       $mensaje = "Producto agregado correctamente";
       exit();
+=======
+        $mensaje = "Producto agregado correctamente";
+        header("Location: inventario.php");
+        exit();
+>>>>>>> Stashed changes
     } else {
       $mensaje = "Error al agregar producto: " . $query;
     }
@@ -227,9 +233,21 @@
             <?php echo $p['SKU']; ?>
           </td>
 
+<<<<<<< Updated upstream
           <td>
             <?php echo $p['NOMBRE']; ?>
           </td>
+=======
+                    <td>
+                        <a href="editarProducto.php?id=<?= $p['PRODUCTO_ID'] ?>" class="btn btn-secondary">
+                            Editar
+                        </a>
+
+                        <a href="EliminarProducto.php?PRODUCTO_ID=<?= $p['PRODUCTO_ID'] ?>" class="btn btn-danger">
+                            Eliminar
+                        </a>
+                    </td>
+>>>>>>> Stashed changes
 
           <td>
             <?php echo $p['DESCRIPCION']; ?>
