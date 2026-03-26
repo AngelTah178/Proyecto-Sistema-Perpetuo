@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
       if ($stmtUser->execute()) {
         echo "<script>
-          alert('✅ Usuario registrado con éxito');
+          alert('Usuario registrado con éxito');
           window.location.href = 'index.php';
         </script>";
         exit();
