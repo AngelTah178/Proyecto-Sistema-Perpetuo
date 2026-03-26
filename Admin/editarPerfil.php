@@ -1,118 +1,118 @@
 <?php
-session_start();
-require_once "../conexion.php";
+  session_start();
+  require_once "../conexion.php";
 
-#credenciales de inicio de sesión
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  header("Location: ../login.php");
-  exit();
-}
-
-$id = $_SESSION['ID_USUARIO'];
-
-#procesar edición
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-  $nombre = $_POST["nombre"];
-  $correo = $_POST["correo"];
-  $clave = $_POST["clave"];
-  $clave_confirmar = $_POST["clave_confirmar"];
-
-  # Validar contraseñas
-  if (!empty($clave) && $clave !== $clave_confirmar) {
-    echo "Las contraseñas no coinciden";
+  #credenciales de inicio de sesión
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+    header("Location: ../login.php");
     exit();
   }
 
-  # nueva contraseña
-  if (!empty($clave)) {
+  $id = $_SESSION['ID_USUARIO'];
 
-    $claveHash = password_hash($clave, PASSWORD_DEFAULT);
+  #procesar edición
+  if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $stmt = $conn->prepare("
-      UPDATE usuarios 
-      SET NOMBRE = ?, CORREO = ?, CONTRASEÑA = ?
-      WHERE ID_USUARIO = ?
-    ");
-    $stmt->bind_param("sssi", $nombre, $correo, $claveHash, $id);
+    $nombre = $_POST["nombre"];
+    $correo = $_POST["correo"];
+    $clave = $_POST["clave"];
+    $clave_confirmar = $_POST["clave_confirmar"];
 
-  } else {
+    # Validar contraseñas
+    if (!empty($clave) && $clave !== $clave_confirmar) {
+      echo "Las contraseñas no coinciden";
+      exit();
+    }
 
-    # stmt sin actualizar contraseña
-    $stmt = $conn->prepare("
-      UPDATE usuarios 
-      SET NOMBRE = ?, CORREO = ?
-      WHERE ID_USUARIO = ?
-    ");
-    $stmt->bind_param("ssi", $nombre, $correo, $id);
+    # nueva contraseña
+    if (!empty($clave)) {
+
+      $claveHash = password_hash($clave, PASSWORD_DEFAULT);
+
+      $stmt = $conn->prepare("
+        UPDATE usuarios 
+        SET NOMBRE = ?, CORREO = ?, CONTRASEÑA = ?
+        WHERE ID_USUARIO = ?
+      ");
+      $stmt->bind_param("sssi", $nombre, $correo, $claveHash, $id);
+
+    } else {
+
+      # stmt sin actualizar contraseña
+      $stmt = $conn->prepare("
+        UPDATE usuarios 
+        SET NOMBRE = ?, CORREO = ?
+        WHERE ID_USUARIO = ?
+      ");
+      $stmt->bind_param("ssi", $nombre, $correo, $id);
+    }
+
+    $stmt->execute();
+
+    # Redirigir después de guardar
+    header("Location: ../index.php");
+    exit();
   }
 
+  #datos usuario
+  $stmt = $conn->prepare("SELECT ID_USUARIO, NOMBRE, CORREO, ROL FROM usuarios WHERE ID_USUARIO = ?");
+  $stmt->bind_param("i", $id);
   $stmt->execute();
+  $result = $stmt->get_result();
 
-  # Redirigir después de guardar
-  header("Location: ../index.php");
-  exit();
-}
+  if ($result->num_rows == 0) {
+    echo "Usuario no encontrado";
+    exit();
+  }
 
-#datos usuario
-$stmt = $conn->prepare("SELECT ID_USUARIO, NOMBRE, CORREO, ROL FROM usuarios WHERE ID_USUARIO = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows == 0) {
-  echo "Usuario no encontrado";
-  exit();
-}
-
-$usuario = $result->fetch_assoc();
+  $usuario = $result->fetch_assoc();
 ?>
 
-<!DOCTYPE html>
 <html lang="es">
 
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editar Usuario</title>
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar Usuario</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="">
 
-<style>
-body {
-  background-image: url('../assets/fondo-form.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
+  <style>
+  body {
+    background-image: url('../assets/fondo-form.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
 
-.form-container {
-  background-color: white;
-  padding: 30px;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-}
+  .form-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+  }
 
-h2 {
-  text-align: center;
-  color: #0557a3;
-}
+  h2 {
+    text-align: center;
+    color: #0557a3;
+  }
 
-.btn-submit {
-  background-color: #0557a3;
-  color: white;
-}
+  .btn-submit {
+    background-color: #0557a3;
+    color: white;
+  }
 
-.btn-submit:hover {
-  background-color: #063965;
-}
-</style>
-</head>
+  .btn-submit:hover {
+    background-color: #063965;
+  }
+  </style>
+  </head>
 
 <body>
 

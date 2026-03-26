@@ -33,7 +33,7 @@
 
       <div class="container-fluid">
       
-        <a class="navbar-brand d-flex align-items-center" href="<?= $base ?>/index.php">
+        <a class="navbar-brand d-flex align-items-center">
           <img src="<?= $base ?>/Assets/Logo.png" alt="logo" width="250" class="me-2">
         </a>
       
