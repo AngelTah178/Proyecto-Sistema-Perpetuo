@@ -10,22 +10,22 @@
   $rol = $_SESSION['ROL'] ?? '';
   #validamos si es un admin
   if ($rol != "admin" && $rol != "empleado") {
-      echo "Acceso denegado. Solo admninistradores";
-      exit();
+    echo "Acceso denegado. Solo admninistradores";
+    exit();
   }
 
   $query = $conn->query("
-  SELECT 
+    SELECT 
       p.*,
       m.NOMBRE AS MARCA,
       c.NOMBRE AS CATEGORIA,
       pr.NOMBRE AS PROVEEDOR,
       l.LOTE_ID
-  FROM productos p
-  LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
-  LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
-  LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
-  LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
+    FROM productos p
+    LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+    LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+    LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
   ");
 
   $productos = $query->fetch_all(MYSQLI_ASSOC);
