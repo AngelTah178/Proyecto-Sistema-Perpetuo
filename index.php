@@ -122,14 +122,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <!-- GESTIÓN DE USUARIOS -->
     <div class="card shadow-sm p-4">
+      <?php if ($_SESSION['ROL'] == 'admin'): ?>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4>Gestión de Usuarios</h4>
 
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Gestión de Usuarios</h4>
+          <button class="btn btn-custom" onclick="window.location.href='GestionarUsuarios.php'">
+            <i class="bi bi-person-plus"></i> Gestionar Usuarios
+          </button>
+        </div>
+      <?php endif; ?>
+      </button>
 
-        <button class="btn btn-custom" onclick="window.location.href='GestionarUsuarios.php'">
-          <i class="bi bi-person-plus"></i> Gestionar Usuarios
-        </button>
-      </div>
 
 
 
