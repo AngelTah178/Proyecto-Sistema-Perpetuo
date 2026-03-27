@@ -64,351 +64,359 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <html lang="es">
 
-<head>
-  <meta charset="UTF-8">
-  <title>Panel Admin</title>
+  <head>
+    <meta charset="UTF-8">
+    <title>Panel Admin</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="CSS/index.css">
-</head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="CSS/index.css">
+  </head>
 
-<body>
+  <body>
 
-  <?php include 'include/navbar.php'; ?>
+    <?php include 'include/navbar.php'; ?>
 
-  <div class="container mt-4">
+    <div class="container mt-4">
 
-    <!-- BIENVENIDA -->
-    <div class="mb-4">
-      <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
-      <p class="text-muted">Panel de administración</p>
-    </div>
-
-    <!-- CARDS -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-4">
-        <div class="card dashboard-card shadow-sm">
-          <div class="card-body">
-            <h5>Total Usuarios</h5>
-            <h2><?= count($usuarios); ?></h2>
-          </div>
-        </div>
+      <!-- BIENVENIDA -->
+      <div class="mb-4">
+        <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
+        <p class="text-muted">Panel de administración</p>
       </div>
 
-      <div class="col-md-4">
-        <div class="card dashboard-card shadow-sm">
-          <div class="card-body">
-            <h5>Admins</h5>
-            <h2>
-              <?= count(array_filter($usuarios, fn($u) => $u['ROL'] == 'admin')); ?>
-            </h2>
+      <!-- CARDS -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-4">
+          <div class="card dashboard-card shadow-sm">
+            <div class="card-body">
+              <h5>Total Usuarios</h5>
+              <h2><?= count($usuarios); ?></h2>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-4">
-        <div class="card dashboard-card shadow-sm">
-          <div class="card-body">
-            <h5>Activos</h5>
-            <h2 class="text-success">
-              <?= count(array_filter($usuarios, fn($u) => $u['ESTADO'] == 'activo')); ?>
-            </h2>
+        <div class="col-md-4">
+          <div class="card dashboard-card shadow-sm">
+            <div class="card-body">
+              <h5>Admins</h5>
+              <h2>
+                <?= count(array_filter($usuarios, fn($u) => $u['ROL'] == 'admin')); ?>
+              </h2>
+            </div>
           </div>
         </div>
+
+        <div class="col-md-4">
+          <div class="card dashboard-card shadow-sm">
+            <div class="card-body">
+              <h5>Activos</h5>
+              <h2 class="text-success">
+                <?= count(array_filter($usuarios, fn($u) => $u['ESTADO'] == 'activo')); ?>
+              </h2>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-    </div>
+      <!-- GESTIÓN DE USUARIOS -->
+      <div class="card shadow-sm p-4">
+        <?php if ($_SESSION['ROL'] == 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Usuarios</h4>
 
-    <!-- GESTIÓN DE USUARIOS -->
-    <div class="card shadow-sm p-4">
-      <?php if ($_SESSION['ROL'] == 'admin'): ?>
+            <button class="btn btn-custom" onclick="window.location.href='register.php'">
+              <i class="bi bi-person-plus"></i> Registrar usuario
+            </button>
+          </div>
+        <?php endif; ?>
+        </button>
+        <!-- FORMULARIO -->
+
+        <!-- BUSCADOR -->
+        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+
+        <!-- TABLA -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <?php $contador = 1; ?>
+              <?php foreach ($usuarios as $u): ?>
+                <tr>
+                  <td>
+                    <?= $contador++; ?>
+                  </td>
+                  <td>
+                    <?= $u['NOMBRE']; ?>
+                  </td>
+                  <td>
+                    <?= $u['APELLIDO']; ?>
+                  </td>
+                  <td>
+                    <?= $u['CORREO']; ?>
+                  </td>
+
+                  <td>
+                    <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
+                      <?= $u['ROL']; ?>
+                    </span>
+                  </td>
+
+                  <td>
+                    <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
+                      <?= $u['ESTADO']; ?>
+                    </span>
+                  </td>
+
+                  <td class="text-center">
+
+                    <button class="btn btn-sm btn-warning"
+                      onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-danger"
+                      onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
+                      <i class="bi bi-trash"></i>
+
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+
+
+
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Usuarios</h4>
+          <h4>Gestión de Productos</h4>
 
-          <button class="btn btn-custom" onclick="window.location.href='register.php'">
-            <i class="bi bi-person-plus"></i> Registrar usuario
+          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+            Registrar producto
           </button>
         </div>
-      <?php endif; ?>
-      </button>
-      <!-- FORMULARIO -->
 
-      <!-- BUSCADOR -->
-      <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+        <!-- BUSCADOR -->
+        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
 
-      <!-- TABLA -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
 
-          <thead class="table-dark">
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Correo</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <?php $contador = 1; ?>
-            <?php foreach ($usuarios as $u): ?>
+            <thead class="table-dark">
               <tr>
-                <td>
-                  <?= $contador++; ?>
-                </td>
-                <td>
-                  <?= $u['NOMBRE']; ?>
-                </td>
-                <td>
-                  <?= $u['APELLIDO']; ?>
-                </td>
-                <td>
-                  <?= $u['CORREO']; ?>
-                </td>
-
-                <td>
-                  <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
-                    <?= $u['ROL']; ?>
-                  </span>
-                </td>
-
-                <td>
-                  <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
-                    <?= $u['ESTADO']; ?>
-                  </span>
-                </td>
-
-                <td class="text-center">
-
-                  <button class="btn btn-sm btn-warning"
-                    onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-
-                  <button class="btn btn-sm btn-danger"
-                    onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
-                    <i class="bi bi-trash"></i>
-
-                </td>
+                <th>#</th>
+                <th>Código de barras</th>
+                <th>SKU</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Fecha_registro</th>
+                <th>Lote</th>
+                <th>Marca</th>
+                <th>Categoría</th>
+                <th>Proveedor</th>
+                <th class="text-center">Acciones</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+            </thead>
 
+            <tbody>
+              <?php $contador = 1; ?>
+              <?php foreach ($productos as $p): ?>
+                <tr>
+                  <td>
+                    <?= $contador++; ?>
+                  </td>
+                  <td>
+                    <?= $p['CODIGO_BARRAS']; ?>
+                  </td>
+                  <td>
+                    <?= $p['SKU']; ?>
+                  </td>
+                  <td>
+                    <?= $p['NOMBRE']; ?>
+                  </td>
+                  <td>
+                    <?= $p['DESCRIPCION']; ?>
+                  </td>
+                  <td>
+                    <?= $p['PRECIO']; ?>
+                  </td>
+                  <td>
+                    <?= $p['FECHA_REGISTRO']; ?>
+                  </td>
+                  <td>
+                    <?= $p['LOTE_ID']; ?>
+                  </td>
+                  <td>
+                    <?= $p['MARCA']; ?>
+                  </td>
+                  <td>
+                    <?= $p['CATEGORIA']; ?>
+                  </td>
+                  <td>
+                    <?= $p['PROVEEDOR']; ?>
+                  </td>
 
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-warning"
+                      onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
+                      <i class="bi bi-pencil"></i>
+                    </button>
 
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Gestión de Productos</h4>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(<?= $u['ID_USUARIO']; ?>)">
+                      <i class="bi bi-trash"></i>
+                    </button>
 
-        <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-          Registrar producto
-        </button>
-      </div>
-
-      <!-- BUSCADOR -->
-      <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
-
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-
-          <thead class="table-dark">
-            <tr>
-              <th>#</th>
-              <th>Código de barras</th>
-              <th>SKU</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Precio</th>
-              <th>Fecha_registro</th>
-              <th>Lote</th>
-              <th>Marca</th>
-              <th>Categoría</th>
-              <th>Proveedor</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <?php $contador = 1; ?>
-            <?php foreach ($productos as $p): ?>
-              <tr>
-                <td>
-                  <?= $contador++; ?>
-                </td>
-                <td>
-                  <?= $p['CODIGO_BARRAS']; ?>
-                </td>
-                <td>
-                  <?= $p['SKU']; ?>
-                </td>
-                <td>
-                  <?= $p['NOMBRE']; ?>
-                </td>
-                <td>
-                  <?= $p['DESCRIPCION']; ?>
-                </td>
-                <td>
-                  <?= $p['PRECIO']; ?>
-                </td>
-                <td>
-                  <?= $p['FECHA_REGISTRO']; ?>
-                </td>
-                <td>
-                  <?= $p['LOTE_ID']; ?>
-                </td>
-                <td>
-                  <?= $p['MARCA']; ?>
-                </td>
-                <td>
-                  <?= $p['CATEGORIA']; ?>
-                </td>
-                <td>
-                  <?= $p['PROVEEDOR']; ?>
-                </td>
-
-                <td class="text-center">
-                  <button class="btn btn-sm btn-warning"
-                    onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-
-                  <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(<?= $u['ID_USUARIO']; ?>)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!--Este es un modal que nos ayudará a pasarle datos al php-->
-  <div class="modal fade" id="modalProducto" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form method="POST">
+    <!--Este es un modal que nos ayudará a pasarle datos al php-->
+    <div class="modal fade" id="modalProducto" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-producto">
 
-          <div class="modal-header">
-            <h5 class="modal-title">Agregar producto</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
+          <form method="POST">
 
-          <div class="modal-body">
-            <div class="mb-3">
-              <label style="color:black;">Código de barras</label>
-              <input type="text" name="CODIGO_BARRAS" class="form-control" autofocus required>
+            <!-- HEADER -->
+            <div class="modal-header">
+              <h5 class="modal-title">
+                Agregar producto
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <div class="mb-3">
-              <label style="color:black;">SKU</label>
-              <input type="text" name="SKU" class="form-control">
-            </div>
+            <!-- BODY -->
+            <div class="modal-body">
 
-            <div class="mb-3">
-              <label style="color:black;">Nombre</label>
-              <input type="text" name="NOMBRE" class="form-control" required>
-            </div>
+              <div class="row">
 
-            <div class="mb-3">
-              <label style="color:black;">Descripción</label>
-              <input type="text" name="DESCRIPCION" class="form-control">
-            </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Código de barras</label>
+                  <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Precio</label>
-              <input type="number" name="PRECIO" class="form-control" required>
-            </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">SKU</label>
+                  <input type="text" name="SKU" class="form-control input-pro">
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Fecha de registro</label>
-              <input type="date" name="FECHA_REGISTRO" class="form-control" required>
-            </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Nombre</label>
+                  <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Lote</label>
-              <select name="LOTE_ID" class="form-control" required>
-                <option value="">Selecciona un lote</option>
-                <?php while ($l = $lotes->fetch_assoc()): ?>
-                  <option value="<?= $l['LOTE_ID'] ?>">
-                    Lote
-                    <?= $l['LOTE_ID'] ?>
-                  </option>
-                <?php endwhile; ?>
-              </select>
-            </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Precio</label>
+                  <input type="number" name="PRECIO" class="form-control input-pro" required>
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Marca</label>
-              <select name="MARCA_ID" class="form-control" required>
-                <option value="">Selecciona una marca</option>
-                <?php while ($m = $marcas->fetch_assoc()): ?>
-                  <option value="<?= $m['MARCA_ID'] ?>">
-                    <?= $m['NOMBRE'] ?>
-                  </option>
-                <?php endwhile; ?>
-              </select>
-            </div>
+                <div class="col-12 mb-3">
+                  <label class="form-label">Descripción</label>
+                  <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Categoría</label>
-              <select name="CATEGORIA_ID" class="form-control" required>
-                <option value="">Selecciona una categoría</option>
-                <?php while ($c = $categorias->fetch_assoc()): ?>
-                  <option value="<?= $c['CATEGORIA_ID'] ?>">
-                    <?= $c['NOMBRE'] ?>
-                  </option>
-                <?php endwhile; ?>
-              </select>
-            </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Fecha de registro</label>
+                  <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
+                </div>
 
-            <div class="mb-3">
-              <label style="color:black;">Proveedor</label>
-              <select name="PROVEEDOR_ID" class="form-control" required>
-                <option value="">Selecciona un proveedor</option>
-                <?php while ($p = $proveedores->fetch_assoc()): ?>
-                  <option value="<?= $p['PROVEEDOR_ID'] ?>">
-                    <?= $p['NOMBRE'] ?>
-                  </option>
-                <?php endwhile; ?>
-              </select>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Lote</label>
+                  <select name="LOTE_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($l = $lotes->fetch_assoc()): ?>
+                      <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Marca</label>
+                  <select name="MARCA_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($m = $marcas->fetch_assoc()): ?>
+                      <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Categoría</label>
+                  <select name="CATEGORIA_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($c = $categorias->fetch_assoc()): ?>
+                      <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                  <label class="form-label">Proveedor</label>
+                  <select name="PROVEEDOR_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($p = $proveedores->fetch_assoc()): ?>
+                      <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+              </div>
+
             </div>
 
             <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">Guardar</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn ms-2 btn-success" style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                Guardar
+              </button>
+              <button type="button" class="btn ms-2 btn-danger" style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                Cancelar
+              </button>
             </div>
 
-        </form>
+          </form>
+
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- SCRIPTS -->
-  <script>
-    document.getElementById("buscador").addEventListener("keyup", function () {
-      let filtro = this.value.toLowerCase();
-      let filas = document.querySelectorAll("tbody tr");
+    <!-- SCRIPTS -->
+    <script>
+      document.getElementById("buscador").addEventListener("keyup", function () {
+        let filtro = this.value.toLowerCase();
+        let filas = document.querySelectorAll("tbody tr");
 
-      filas.forEach(fila => {
-        fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? "" : "none";
+        filas.forEach(fila => {
+          fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? "" : "none";
+        });
       });
-    });
 
-    function eliminarUsuario(id) {
-      if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-        window.location.href = "eliminar_usuario.php?id=" + id;
+      function eliminarUsuario(id) {
+        if (confirm("¿Seguro que quieres eliminar este usuario?")) {
+          window.location.href = "eliminar_usuario.php?id=" + id;
+        }
       }
-    }
-  </script>
+    </script>
 
-</body>
+  </body>
 
 </html>

@@ -1,6 +1,5 @@
 body {
   background: linear-gradient(135deg, #eef2f7, #dfe9f3);
-
   padding-top: 80px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -58,4 +57,85 @@ h2, h3, h4 {
 
 #buscador {
   border-radius: 10px;
+}
+
+/* Modal */
+.modal-content label {
+  color: #0d2b3e !important;
+}
+
+.modal-body label {
+  color: #0d2b3e !important;
+}
+
+.modal-body {
+  color: #0d2b3e !important;
+  max-height: 65vh; 
+  overflow-y: auto; 
+  padding-right: 10px;
+}
+
+.modal-producto {
+  border-radius: 20px;
+  color: #0d2b3e;
+  overflow: hidden;
+}
+
+.modal-producto .form-label {
+  color: #0d2b3e !important;
+}
+
+.modal-producto label {
+  color: #0d2b3e !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #0d2b3e, #1e90ff);
+  color: black;
+}
+
+.modal-title {
+  font-weight: 500;
+  color: white;
+}
+
+.modal-content {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-producto .form-control {
+  color: #000;
+  background-color: #fff;
+}
+
+.input-pro {
+  border-radius: 10px;
+  border: 2px solid #dcdcdc;
+}
+
+.input-pro:focus {
+  border-color: #1e90ff;
+  box-shadow: 0 0 4px rgba(30,144,255,0.2);
+}
+
+.btn-guardar {
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-guardar:hover {
+  transform: scale(1.05);
+}
+
+.btn-cancelar {
+  color: white;
+  border-radius: 10px;
+}
+
+label {
+  font-weight: 400;
+  color: black !important;
 }
