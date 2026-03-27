@@ -1,17 +1,18 @@
 <?php
-session_start();
-include "conexion.php";
+  session_start();
+  $rol = $_SESSION['ROL'];
+  include "conexion.php";
 
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  header("Location: login.php");
-  exit;
-}
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+    header("Location: login.php");
+    exit;
+  }
 
-// Obtener usuarios
-$query = $conn->query("SELECT * FROM usuarios");
-$usuarios = $query->fetch_all(MYSQLI_ASSOC);
+  // Obtener usuarios
+  $query = $conn->query("SELECT * FROM usuarios");
+  $usuarios = $query->fetch_all(MYSQLI_ASSOC);
 
-$query = $conn->query("
+  $query = $conn->query("
     SELECT 
       p.*,
       m.NOMBRE AS MARCA,
@@ -25,41 +26,41 @@ $query = $conn->query("
     LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
   ");
 
-$productos = $query->fetch_all(MYSQLI_ASSOC);
+  $productos = $query->fetch_all(MYSQLI_ASSOC);
 
-# LOTES
-$lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+  # LOTES
+  $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
 
-# MARCAS
-$marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+  # MARCAS
+  $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
 
-# CATEGORIAS
-$categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+  # CATEGORIAS
+  $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
 
-# PROVEEDORES
-$proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+  # PROVEEDORES
+  $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"];
-  $SKU = $_POST["SKU"];
-  $NOMBRE = $_POST["NOMBRE"];
-  $DESCRIPCION = $_POST["DESCRIPCION"];
-  $PRECIO = $_POST["PRECIO"];
-  $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"];
-  $LOTE_ID = $_POST["LOTE_ID"];
-  $MARCA_ID = $_POST["MARCA_ID"];
-  $CATEGORIA_ID = $_POST["CATEGORIA_ID"];
-  $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"];
+  if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"];
+    $SKU = $_POST["SKU"];
+    $NOMBRE = $_POST["NOMBRE"];
+    $DESCRIPCION = $_POST["DESCRIPCION"];
+    $PRECIO = $_POST["PRECIO"];
+    $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"];
+    $LOTE_ID = $_POST["LOTE_ID"];
+    $MARCA_ID = $_POST["MARCA_ID"];
+    $CATEGORIA_ID = $_POST["CATEGORIA_ID"];
+    $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"];
 
-  $stmt = $conn->prepare("INSERT INTO productos (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-  $stmt->bind_param("ssssdsiiii", $CODIGO_BARRAS, $SKU, $NOMBRE, $DESCRIPCION, $PRECIO, $FECHA_REGISTRO, $LOTE_ID, $MARCA_ID, $CATEGORIA_ID, $PROVEEDOR_ID);
-  if ($stmt->execute()) {
-    $mensaje = "Producto agregado correctamente";
-    header("index.php");
-  } else {
-    $mensaje = "Error al agregar producto: " . $query;
+    $stmt = $conn->prepare("INSERT INTO productos (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssdsiiii", $CODIGO_BARRAS, $SKU, $NOMBRE, $DESCRIPCION, $PRECIO, $FECHA_REGISTRO, $LOTE_ID, $MARCA_ID, $CATEGORIA_ID, $PROVEEDOR_ID);
+    if ($stmt->execute()) {
+      $mensaje = "Producto agregado correctamente";
+      header("index.php");
+    } else {
+      $mensaje = "Error al agregar producto: " . $query;
+    }
   }
-}
 ?>
 
 <html lang="es">
@@ -87,42 +88,75 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
       <!-- CARDS -->
       <div class="row g-4 mb-4">
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Total Usuarios</h5>
-              <h2><?= count($usuarios); ?></h2>
+        <?php if ($rol == 'admin'): ?>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Usuarios</h5>
+                <h2><?= count($usuarios); ?></h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Admins</h5>
-              <h2>
-                <?= count(array_filter($usuarios, fn($u) => $u['ROL'] == 'admin')); ?>
-              </h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Admins</h5>
+                <h2>
+                  <?= count(array_filter($usuarios, fn($u) => $u['ROL'] == 'admin')); ?>
+                </h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Activos</h5>
-              <h2 class="text-success">
-                <?= count(array_filter($usuarios, fn($u) => $u['ESTADO'] == 'activo')); ?>
-              </h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Activos</h5>
+                <h2 class="text-success">
+                  <?= count(array_filter($usuarios, fn($u) => $u['ESTADO'] == 'activo')); ?>
+                </h2>
+              </div>
             </div>
           </div>
-        </div>
+
+        <?php else: ?>
+
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Productos</h5>
+                <h2><?= count($productos); ?></h2>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Marcas</h5>
+                <h2><?= $marcas->num_rows; ?></h2>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Proveedores</h5>
+                <h2><?= $proveedores->num_rows; ?></h2>
+              </div>
+            </div>
+          </div>
+
+        <?php endif; ?>
+
 
       </div>
 
       <!-- GESTIÓN DE USUARIOS -->
       <div class="card shadow-sm p-4">
-        <?php if ($_SESSION['ROL'] == 'admin'): ?>
+        <?php if ($rol == 'admin'): ?>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Usuarios</h4>
 
@@ -130,163 +164,162 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <i class="bi bi-person-plus"></i> Registrar usuario
             </button>
           </div>
+
+          <!-- FORMULARIO -->
+
+          <!-- BUSCADOR -->
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+
+          <!-- TABLA -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <?php $contador = 1; ?>
+                <?php foreach ($usuarios as $u): ?>
+                  <tr>
+                    <td>
+                      <?= $contador++; ?>
+                    </td>
+                    <td>
+                      <?= $u['NOMBRE']; ?>
+                    </td>
+                    <td>
+                      <?= $u['APELLIDO']; ?>
+                    </td>
+                    <td>
+                      <?= $u['CORREO']; ?>
+                    </td>
+
+                    <td>
+                      <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
+                        <?= $u['ROL']; ?>
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
+                        <?= $u['ESTADO']; ?>
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+
+                      <button class="btn btn-sm btn-warning" onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-danger" onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
+                        <i class="bi bi-trash"></i>
+
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         <?php endif; ?>
-        </button>
-        <!-- FORMULARIO -->
 
-        <!-- BUSCADOR -->
-        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
 
-        <!-- TABLA -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
+        <?php if ($rol != 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Productos</h4>
 
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Apellido</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+              Registrar producto
+            </button>
+          </div>
 
-            <tbody>
-              <?php $contador = 1; ?>
-              <?php foreach ($usuarios as $u): ?>
+          <!-- BUSCADOR -->
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
                 <tr>
-                  <td>
-                    <?= $contador++; ?>
-                  </td>
-                  <td>
-                    <?= $u['NOMBRE']; ?>
-                  </td>
-                  <td>
-                    <?= $u['APELLIDO']; ?>
-                  </td>
-                  <td>
-                    <?= $u['CORREO']; ?>
-                  </td>
-
-                  <td>
-                    <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
-                      <?= $u['ROL']; ?>
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
-                      <?= $u['ESTADO']; ?>
-                    </span>
-                  </td>
-
-                  <td class="text-center">
-
-                    <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger"
-                      onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
-                      <i class="bi bi-trash"></i>
-
-                  </td>
+                  <th>#</th>
+                  <th>Código de barras</th>
+                  <th>SKU</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Precio</th>
+                  <th>Fecha de registro</th>
+                  <th>Lote</th>
+                  <th>Marca</th>
+                  <th>Categoría</th>
+                  <th>Proveedor</th>
+                  <th class="text-center">Acciones</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
+              </thead>
 
+              <tbody>
+                <?php $contador = 1; ?>
+                <?php foreach ($productos as $p): ?>
+                  <tr>
+                    <td>
+                      <?= $contador++; ?>
+                    </td>
+                    <td>
+                      <?= $p['CODIGO_BARRAS']; ?>
+                    </td>
+                    <td>
+                      <?= $p['SKU']; ?>
+                    </td>
+                    <td>
+                      <?= $p['NOMBRE']; ?>
+                    </td>
+                    <td>
+                      <?= $p['DESCRIPCION']; ?>
+                    </td>
+                    <td>
+                      <?= $p['PRECIO']; ?>
+                    </td>
+                    <td>
+                      <?= $p['FECHA_REGISTRO']; ?>
+                    </td>
+                    <td>
+                      <?= $p['LOTE_ID']; ?>
+                    </td>
+                    <td>
+                      <?= $p['MARCA']; ?>
+                    </td>
+                    <td>
+                      <?= $p['CATEGORIA']; ?>
+                    </td>
+                    <td>
+                      <?= $p['PROVEEDOR']; ?>
+                    </td>
 
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-warning"
+                        onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Productos</h4>
+                      <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(<?= $u['ID_USUARIO']; ?>)">
+                        <i class="bi bi-trash"></i>
+                      </button>
 
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-            Registrar producto
-          </button>
-        </div>
-
-        <!-- BUSCADOR -->
-        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
-
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Código de barras</th>
-                <th>SKU</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Fecha_registro</th>
-                <th>Lote</th>
-                <th>Marca</th>
-                <th>Categoría</th>
-                <th>Proveedor</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <?php $contador = 1; ?>
-              <?php foreach ($productos as $p): ?>
-                <tr>
-                  <td>
-                    <?= $contador++; ?>
-                  </td>
-                  <td>
-                    <?= $p['CODIGO_BARRAS']; ?>
-                  </td>
-                  <td>
-                    <?= $p['SKU']; ?>
-                  </td>
-                  <td>
-                    <?= $p['NOMBRE']; ?>
-                  </td>
-                  <td>
-                    <?= $p['DESCRIPCION']; ?>
-                  </td>
-                  <td>
-                    <?= $p['PRECIO']; ?>
-                  </td>
-                  <td>
-                    <?= $p['FECHA_REGISTRO']; ?>
-                  </td>
-                  <td>
-                    <?= $p['LOTE_ID']; ?>
-                  </td>
-                  <td>
-                    <?= $p['MARCA']; ?>
-                  </td>
-                  <td>
-                    <?= $p['CATEGORIA']; ?>
-                  </td>
-                  <td>
-                    <?= $p['PROVEEDOR']; ?>
-                  </td>
-
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(<?= $u['ID_USUARIO']; ?>)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
 
