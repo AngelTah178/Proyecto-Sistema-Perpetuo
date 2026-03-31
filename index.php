@@ -58,6 +58,7 @@ if (isset($_POST['form_producto'])) {
     echo "Faltan datos obligatorios del producto";
   }
 }
+//====================FIN INSERTAR PRODUCTO====================
 
 // ================== INSERTAR USUARIO ==================
 if (isset($_POST['form_usuario'])) {
@@ -131,6 +132,8 @@ $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
 $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
 $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
 $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+
+#TOKEN PARA CONOCER MOVIMIENTOS
 ?>
 
 <html lang="es">
@@ -401,6 +404,13 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
           <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
             Registrar producto
           </button>
+
+          <button class="btn btn-sm btn-warning" onclick="window.location.href='RegistroEntrada.php'">
+            Registro stock
+          </button>
+          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+            Generar orden de compra
+          </button>
         </div>
 
         <!-- BUSCADOR -->
@@ -466,7 +476,7 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
 
                   <td class="text-center">
                     <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='editar_producto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
+                      onclick="window.location.href='editarProducto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
                       <i class="bi bi-pencil"></i>
                     </button>
 
@@ -490,7 +500,7 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
       <div class="modal-content modal-producto">
 
         <form method="POST">
-
+          <input type="hidden" name="form_producto" value="1">
           <!-- HEADER -->
           <div class="modal-header">
             <h5 class="modal-title">

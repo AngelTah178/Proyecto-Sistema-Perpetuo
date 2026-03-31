@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     );
 
     if ($stmt->execute()) {
-        header("Location: inventario.php");
+        header("Location: index.php");
         exit;
     } else {
         echo "Error al actualizar: " . $conn->error;
