@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($stmt->execute()) {
         echo "Stock registrado correctamente";
-        header("Location: index.php");
+        header("Location: Stock.php");
     } else {
         echo "Error: " . $stmt->error;
     }
@@ -52,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <h5 class="modal-title">
                 Agregar producto
             </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
         <!-- BODY -->
@@ -102,10 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     style="border-radius:10px; padding:8px 20px; font-weight:600;">
                     Guardar
                 </button>
-                <button type="button" class="btn ms-2 btn-danger"
-                    style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                    Cancelar
-                </button>
+                <button class="btn btn-warning" onclick="window.location.href='Stock.php'">
+                    Cancelar </button>
             </div>
 
     </form>

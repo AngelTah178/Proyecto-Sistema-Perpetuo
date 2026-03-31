@@ -405,8 +405,8 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
             Registrar producto
           </button>
 
-          <button class="btn btn-sm btn-warning" onclick="window.location.href='RegistroEntrada.php'">
-            Registro stock
+          <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
+            stock de producto
           </button>
           <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
             Generar orden de compra
