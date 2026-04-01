@@ -1,628 +1,681 @@
 <?php
-session_start();
-include "conexion.php";
+  session_start();
+  include "conexion.php";
 
-// ================== VALIDAR SESIÓN ==================
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  header("Location: login.php");
-  exit;
-}
-
-$rol = $_SESSION['ROL'];
-
-// ================== INSERTAR PRODUCTO ==================
-if (isset($_POST['form_producto'])) {
-
-  $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"] ?? null;
-  $SKU = $_POST["SKU"] ?? null;
-  $NOMBRE = $_POST["NOMBRE"] ?? null;
-  $DESCRIPCION = $_POST["DESCRIPCION"] ?? null;
-  $PRECIO = $_POST["PRECIO"] ?? 0;
-  $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"] ?? null;
-  $LOTE_ID = $_POST["LOTE_ID"] ?? null;
-  $MARCA_ID = $_POST["MARCA_ID"] ?? null;
-  $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
-  $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
-
-  // Validación básica
-  if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
-
-    $stmt = $conn->prepare("
-      INSERT INTO productos 
-      (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-
-    $stmt->bind_param(
-      "ssssdsiiii",
-      $CODIGO_BARRAS,
-      $SKU,
-      $NOMBRE,
-      $DESCRIPCION,
-      $PRECIO,
-      $FECHA_REGISTRO,
-      $LOTE_ID,
-      $MARCA_ID,
-      $CATEGORIA_ID,
-      $PROVEEDOR_ID
-    );
-
-    if ($stmt->execute()) {
-      header("Location: index.php");
-      exit();
-    } else {
-      echo "Error al insertar producto: " . $stmt->error;
-    }
-
-  } else {
-    echo "Faltan datos obligatorios del producto";
+  // ================== VALIDAR SESIÓN ==================
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+    header("Location: login.php");
+    exit;
   }
-}
-//====================FIN INSERTAR PRODUCTO====================
 
-// ================== INSERTAR USUARIO ==================
-if (isset($_POST['form_usuario'])) {
+  $rol = $_SESSION['ROL'];
 
-  $nombre = trim($_POST['NOMBRE'] ?? '');
-  $apellido_p = trim($_POST['APELLIDO_P'] ?? '');
-  $apellido_m = trim($_POST['APELLIDO_M'] ?? '');
-  $correo = trim($_POST['CORREO'] ?? '');
-  $telefono = trim($_POST['TELEFONO'] ?? '');
-  $estado = $_POST['ESTADO'] ?? 'activo';
-  $contraseña = $_POST['CONTRASEÑA'] ?? '';
-  $rol_user = $_POST['ROL'] ?? 'empleado';
+  // ================== INSERTAR PRODUCTO ==================
+  if (isset($_POST['form_producto'])) {
 
-  if (!empty($nombre) && !empty($apellido_p) && !empty($correo) && !empty($contraseña)) {
+    $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"] ?? null;
+    $SKU = $_POST["SKU"] ?? null;
+    $NOMBRE = $_POST["NOMBRE"] ?? null;
+    $DESCRIPCION = $_POST["DESCRIPCION"] ?? null;
+    $PRECIO = $_POST["PRECIO"] ?? 0;
+    $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"] ?? null;
+    $LOTE_ID = $_POST["LOTE_ID"] ?? null;
+    $MARCA_ID = $_POST["MARCA_ID"] ?? null;
+    $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
+    $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
+  
+    // Validación básica
+    if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
 
-    // ENCRIPTAR CONTRASEÑA
-    $hash = password_hash($contraseña, PASSWORD_DEFAULT);
+      $stmt = $conn->prepare("
+        INSERT INTO productos 
+        (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ");
 
-    // INSERT CORRECTO
-    $stmt = $conn->prepare("
-      INSERT INTO usuarios 
-      (NOMBRE, APELLIDO_P, APELLIDO_M, CORREO, CONTRASEÑA, ROL, ESTADO) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
+      $stmt->bind_param(
+        "ssssdsiiii",
+        $CODIGO_BARRAS,
+        $SKU,
+        $NOMBRE,
+        $DESCRIPCION,
+        $PRECIO,
+        $FECHA_REGISTRO,
+        $LOTE_ID,
+        $MARCA_ID,
+        $CATEGORIA_ID,
+        $PROVEEDOR_ID
+      );
 
-    if (!$stmt) {
-      die("Error en prepare: " . $conn->error);
-    }
+      if ($stmt->execute()) {
+        header("Location: index.php");
+        exit();
+      } else {
+        echo "Error al insertar producto: " . $stmt->error;
+      }
 
-    $stmt->bind_param(
-      "sssssss",
-      $nombre,
-      $apellido_p,
-      $apellido_m,
-      $correo,
-      $hash,
-      $rol_user,
-      $estado
-    );
-
-    if ($stmt->execute()) {
-      echo "<script>
-        alert('Usuario registrado correctamente');
-        window.location='index.php';
-      </script>";
-      exit();
     } else {
-      echo "Error al insertar usuario: " . $stmt->error;
+      echo "Faltan datos obligatorios del producto";
     }
-
-  } else {
-    echo "Faltan campos obligatorios del usuario";
   }
-}
-// ================== CONSULTAS ==================
-$usuarios = $conn->query("SELECT * FROM usuarios")->fetch_all(MYSQLI_ASSOC);
+  //====================FIN INSERTAR PRODUCTO====================
 
-$productos = $conn->query("
-  SELECT 
-    p.*, 
-    m.NOMBRE AS MARCA, 
-    c.NOMBRE AS CATEGORIA, 
-    pr.NOMBRE AS PROVEEDOR
-  FROM productos p
-  LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
-  LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
-  LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
-")->fetch_all(MYSQLI_ASSOC);
+  // ================== INSERTAR USUARIO ==================
+  if (isset($_POST['form_usuario'])) {
 
-$lotes = $conn->query("SELECT LOTE_ID FROM lotes");
-$marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
-$categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
-$proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+    $nombre = trim($_POST['NOMBRE'] ?? '');
+    $apellido_p = trim($_POST['APELLIDO_P'] ?? '');
+    $apellido_m = trim($_POST['APELLIDO_M'] ?? '');
+    $correo = trim($_POST['CORREO'] ?? '');
+    $telefono = trim($_POST['TELEFONO'] ?? '');
+    $estado = $_POST['ESTADO'] ?? 'activo';
+    $contraseña = $_POST['CONTRASEÑA'] ?? '';
+    $rol_user = $_POST['ROL'] ?? 'empleado';
 
-#TOKEN PARA CONOCER MOVIMIENTOS
+    if (!empty($nombre) && !empty($apellido_p) && !empty($correo) && !empty($contraseña)) {
+
+      // ENCRIPTAR CONTRASEÑA
+      $hash = password_hash($contraseña, PASSWORD_DEFAULT);
+
+      // INSERT CORRECTO
+      $stmt = $conn->prepare("
+        INSERT INTO usuarios 
+        (NOMBRE, APELLIDO_P, APELLIDO_M, CORREO, CONTRASEÑA, ROL, ESTADO) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      ");
+
+      if (!$stmt) {
+        die("Error en prepare: " . $conn->error);
+      }
+
+      $stmt->bind_param(
+        "sssssss",
+        $nombre,
+        $apellido_p,
+        $apellido_m,
+        $correo,
+        $hash,
+        $rol_user,
+        $estado
+      );
+
+      if ($stmt->execute()) {
+        echo "<script>
+          alert('Usuario registrado correctamente');
+          window.location='index.php';
+        </script>";
+        exit();
+      } else {
+        echo "Error al insertar usuario: " . $stmt->error;
+      }
+
+    } else {
+      echo "Faltan campos obligatorios del usuario";
+    }
+  }
+  // ================== CONSULTAS ==================
+
+  // ================== PAGINACIÓN ==================
+  $registros_por_pagina = 10;
+
+  // USUARIOS
+  $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+  if ($pagina < 1) $pagina = 1;
+
+  $offset = ($pagina - 1) * $registros_por_pagina;
+
+  $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
+  $total_paginas = ceil($total_usuarios / $registros_por_pagina);
+
+  $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
+  $total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
+
+  // PRODUCTOS
+  $pagina_productos = isset($_GET['pagina_productos']) ? (int)$_GET['pagina_productos'] : 1;
+  if ($pagina_productos < 1) $pagina_productos = 1;
+
+  $offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
+
+  $total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
+  $total_paginas_productos = ceil($total_productos / $registros_por_pagina);
+  
+  $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
+  $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+
+
+  $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
+
+  $productos = $conn->query("
+    SELECT 
+      p.*, 
+      m.NOMBRE AS MARCA, 
+      c.NOMBRE AS CATEGORIA, 
+      pr.NOMBRE AS PROVEEDOR
+    FROM productos p
+    LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+    LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+    LIMIT $offset_productos, $registros_por_pagina
+  ")->fetch_all(MYSQLI_ASSOC);
+
+  $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+  $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+  $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+  $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+
+  #TOKEN PARA CONOCER MOVIMIENTOS
 ?>
 
 <html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <title>Panel Admin</title>
 
-<head>
-  <meta charset="UTF-8">
-  <title>Panel Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="CSS/index.css">
+  </head>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="CSS/index.css">
-</head>
+  <body>
 
-<body>
+    <?php include 'include/navbar.php'; ?>
 
-  <?php include 'include/navbar.php'; ?>
+    <div class="container mt-4">
 
-  <div class="container mt-4">
+      <!-- BIENVENIDA -->
+      <div class="mb-4">
+        <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
+        <p class="text-muted">Panel de administración</p>
+      </div>
 
-    <!-- BIENVENIDA -->
-    <div class="mb-4">
-      <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
-      <p class="text-muted">Panel de administración</p>
-    </div>
-
-    <!-- CARDS -->
-    <div class="row g-4 mb-4">
-      <?php if ($rol == 'admin'): ?>
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Total Usuarios</h5>
-              <h2><?= count($usuarios); ?></h2>
+      <!-- CARDS -->
+      <div class="row g-4 mb-4">
+        <?php if ($rol == 'admin'): ?>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Usuarios</h5>
+                <h2><?= $total_usuarios; ?></h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Admins</h5>
-              <h2>
-                <?= count(array_filter($usuarios, fn($u) => $u['ROL'] == 'admin')); ?>
-              </h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Admins</h5>
+                <h2>
+                  <?= $total_admins; ?>
+                </h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Activos</h5>
-              <h2 class="text-success">
-                <?= count(array_filter($usuarios, fn($u) => $u['ESTADO'] == 'activo')); ?>
-              </h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Activos</h5>
+                <h2 class="text-success">
+                  <?= $total_activos; ?>
+                </h2>
+              </div>
             </div>
           </div>
-        </div>
 
-      <?php else: ?>
+        <?php else: ?>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Total Productos</h5>
-              <h2><?= count($productos); ?></h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Productos</h5>
+                <h2><?= $total_productos; ?></h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Marcas</h5>
-              <h2><?= $marcas->num_rows; ?></h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Marcas</h5>
+                <h2><?= $total_marcas; ?></h2>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Proveedores</h5>
-              <h2><?= $proveedores->num_rows; ?></h2>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Proveedores</h5>
+                <h2><?= $total_proveedores; ?></h2>
+              </div>
             </div>
           </div>
-        </div>
 
-      <?php endif; ?>
+        <?php endif; ?>
 
 
-    </div>
+      </div>
 
-    <!-- GESTIÓN DE USUARIOS MODAL USUARIO -->
-    <div class="card shadow-sm p-4">
-      <?php if ($rol == 'admin'): ?>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Usuarios</h4>
+      <!-- GESTIÓN DE USUARIOS -->
+      <div class="card shadow-sm p-4">
+        <?php if ($rol == 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Usuarios</h4>
 
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalUsuario">
-            Registrar usuario
-          </button>
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+              Registrar usuario
+            </button>
 
-          <div class="modal fade" id="modalUsuario" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-              <div class="modal-content modal-producto">
+            <!--Modal de registro de usuarios-->
+            <div class="modal fade" id="modalUsuario" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content modal-producto">
 
-                <form method="POST">
-                  <input type="hidden" name="form_usuario" value="1">
-                  <!-- HEADER -->
-                  <div class="modal-header">
-                    <h5 class="modal-title">
-                      Agregar usuario
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                  </div>
+                  <form method="POST">
+                    <input type="hidden" name="form_usuario" value="1">
+                    <!-- HEADER -->
+                    <div class="modal-header">
+                      <h5 class="modal-title">
+                        Agregar usuario
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
 
-                  <!-- BODY -->
-                  <div class="modal-body">
+                    <!-- BODY -->
+                    <div class="modal-body">
 
-                    <div class="row">
+                      <div class="row">
 
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Nombre</label>
+                          <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Apellido paterno</label>
+                          <input type="text" name="APELLIDO_P" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Apellido materno</label>
+                          <input type="text" name="APELLIDO_M" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Correo</label>
+                          <input type="email" name="CORREO" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Contraseña</label>
+                          <input type="text" name="CONTRASEÑA" class="form-control input-pro">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Rol usuario</label>
+                          <select name="ROL" class="form-control">
+                            <option value="empleado">Empleado</option>
+                            <option value="admin">Administrador</option>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Estado empleado</label>
+                          <select name="ESTADO" class="form-control">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                          </select>
+                        </div>
+
+
+
                       </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Apellido paterno</label>
-                        <input type="text" name="APELLIDO_P" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Apellido materno</label>
-                        <input type="text" name="APELLIDO_M" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Correo</label>
-                        <input type="email" name="CORREO" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-12 mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input type="text" name="CONTRASEÑA" class="form-control input-pro">
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label>Rol usuario</label>
-                        <select name="ROL" class="form-control">
-                          <option value="empleado">Empleado</option>
-                          <option value="admin">Administrador</option>
-                        </select>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label>Estado empleado</label>
-                        <select name="ESTADO" class="form-control">
-                          <option value="activo">Activo</option>
-                          <option value="inactivo">Inactivo</option>
-                        </select>
-                      </div>
-
-
 
                     </div>
 
-                  </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn ms-2 btn-success"
+                        style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                        Guardar
+                      </button>
+                      <button type="button" class="btn ms-2 btn-danger"
+                        style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                        Cancelar
+                      </button>
+                    </div>
 
-                  <div class="modal-footer">
-                    <button type="submit" class="btn ms-2 btn-success"
-                      style="border-radius:10px; padding:8px 20px; font-weight:600;">
-                      Guardar
-                    </button>
-                    <button type="button" class="btn ms-2 btn-danger"
-                      style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                      Cancelar
-                    </button>
-                  </div>
+                  </form>
 
-                </form>
-
+                </div>
               </div>
             </div>
           </div>
 
+          <!-- BUSCADOR -->
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
 
-        </div>
+          <!-- TABLA USUARIOS-->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
 
-        <!-- FORMULARIO -->
-
-        <!-- BUSCADOR -->
-        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
-
-        <!-- TABLA -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Apellido Paterno</th>
-                <th>Apellido Materno</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <?php $contador = 1; ?>
-              <?php foreach ($usuarios as $u): ?>
+              <thead class="table-dark">
                 <tr>
-                  <td>
-                    <?= $contador++; ?>
-                  </td>
-                  <td>
-                    <?= $u['NOMBRE']; ?>
-                  </td>
-                  <td>
-                    <?= $u['APELLIDO_P']; ?>
-                  </td>
-                  <td>
-                    <?= $u['APELLIDO_M']; ?>
-                  </td>
-                  <td>
-                    <?= $u['CORREO']; ?>
-                  </td>
-
-                  <td>
-                    <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
-                      <?= $u['ROL']; ?>
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
-                      <?= $u['ESTADO']; ?>
-                    </span>
-                  </td>
-
-                  <td class="text-center">
-
-                    <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger"
-                      onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
-                      <i class="bi bi-trash"></i>
-
-                  </td>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Apellido Paterno</th>
+                  <th>Apellido Materno</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
+              </thead>
 
+              <tbody>
+                <?php $contador = $offset + 1; ?>
+                <?php foreach ($usuarios as $u): ?>
+                  <tr>
+                    <td>
+                      <?= $contador++; ?>
+                    </td>
+                    <td>
+                      <?= $u['NOMBRE']; ?>
+                    </td>
+                    <td>
+                      <?= $u['APELLIDO_P']; ?>
+                    </td>
+                    <td>
+                      <?= $u['APELLIDO_M']; ?>
+                    </td>
+                    <td>
+                      <?= $u['CORREO']; ?>
+                    </td>
 
-      <?php if ($rol != 'admin'): ?>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Productos</h4>
+                    <td>
+                      <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
+                        <?= $u['ROL']; ?>
+                      </span>
+                    </td>
 
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-            Registrar producto
-          </button>
+                    <td>
+                      <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
+                        <?= $u['ESTADO']; ?>
+                      </span>
+                    </td>
 
-          <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
-            stock de producto
-          </button>
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-            Generar orden de compra
-          </button>
-        </div>
+                    <td class="text-center">
 
-        <!-- BUSCADOR -->
-        <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+                      <button class="btn btn-sm btn-warning"
+                        onclick="window.location.href='Admin/editarPerfil.php?id=<?= $u['ID_USUARIO']; ?>'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
+                      <button class="btn btn-sm btn-danger"
+                        onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
+                        <i class="bi bi-trash"></i>
 
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Código de barras</th>
-                <th>SKU</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Fecha de registro</th>
-                <th>Lote</th>
-                <th>Marca</th>
-                <th>Categoría</th>
-                <th>Proveedor</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina <= 1) ? 'disabled' : '' ?>"
+                href="?pagina=<?= $pagina - 1 ?>">
+                &lt;
+              </a>
 
-            <tbody>
-              <?php $contador = 1; ?>
-              <?php foreach ($productos as $p): ?>
-                <tr>
-                  <td>
-                    <?= $contador++; ?>
-                  </td>
-                  <td>
-                    <?= $p['CODIGO_BARRAS']; ?>
-                  </td>
-                  <td>
-                    <?= $p['SKU']; ?>
-                  </td>
-                  <td>
-                    <?= $p['NOMBRE']; ?>
-                  </td>
-                  <td>
-                    <?= $p['DESCRIPCION']; ?>
-                  </td>
-                  <td>
-                    <?= $p['PRECIO']; ?>
-                  </td>
-                  <td>
-                    <?= $p['FECHA_REGISTRO']; ?>
-                  </td>
-                  <td>
-                    <?= $p['LOTE_ID']; ?>
-                  </td>
-                  <td>
-                    <?= $p['MARCA']; ?>
-                  </td>
-                  <td>
-                    <?= $p['CATEGORIA']; ?>
-                  </td>
-                  <td>
-                    <?= $p['PROVEEDOR']; ?>
-                  </td>
+              <span class="fw-bold"><?= $pagina ?></span>
 
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='editarProducto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(<?= $u['ID_USUARIO']; ?>)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
-    </div>
-  </div>
-
-  <!--Este es un modal que nos ayudará a pasarle datos al php-->
-  <div class="modal fade" id="modalProducto" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content modal-producto">
-
-        <form method="POST">
-          <input type="hidden" name="form_producto" value="1">
-          <!-- HEADER -->
-          <div class="modal-header">
-            <h5 class="modal-title">
-              Agregar producto
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <a class="btn btn-light <?= ($pagina >= $total_paginas) ? 'disabled' : '' ?>"
+                href="?pagina=<?= $pagina + 1 ?>">
+                &gt;
+              </a>
+            </nav>
           </div>
+        <?php endif; ?>
 
-          <!-- BODY -->
-          <div class="modal-body">
+        <!-- GESTIÓN DE PRODUCTOS -->
+        <?php if ($rol != 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Productos</h4>
 
-            <div class="row">
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Código de barras</label>
-                <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">SKU</label>
-                <input type="text" name="SKU" class="form-control input-pro">
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre</label>
-                <input type="text" name="NOMBRE" class="form-control input-pro" required>
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Precio</label>
-                <input type="number" name="PRECIO" class="form-control input-pro" required>
-              </div>
-
-              <div class="col-12 mb-3">
-                <label class="form-label">Descripción</label>
-                <input type="text" name="DESCRIPCION" class="form-control input-pro">
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Fecha de registro</label>
-                <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Lote</label>
-                <select name="LOTE_ID" class="form-control input-pro" required>
-                  <option value="">Selecciona</option>
-                  <?php while ($l = $lotes->fetch_assoc()): ?>
-                    <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
-                  <?php endwhile; ?>
-                </select>
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Marca</label>
-                <select name="MARCA_ID" class="form-control input-pro" required>
-                  <option value="">Selecciona</option>
-                  <?php while ($m = $marcas->fetch_assoc()): ?>
-                    <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                  <?php endwhile; ?>
-                </select>
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Categoría</label>
-                <select name="CATEGORIA_ID" class="form-control input-pro" required>
-                  <option value="">Selecciona</option>
-                  <?php while ($c = $categorias->fetch_assoc()): ?>
-                    <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                  <?php endwhile; ?>
-                </select>
-              </div>
-
-              <div class="col-md-12 mb-3">
-                <label class="form-label">Proveedor</label>
-                <select name="PROVEEDOR_ID" class="form-control input-pro" required>
-                  <option value="">Selecciona</option>
-                  <?php while ($p = $proveedores->fetch_assoc()): ?>
-                    <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
-                  <?php endwhile; ?>
-                </select>
-              </div>
-
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="submit" class="btn ms-2 btn-success"
-              style="border-radius:10px; padding:8px 20px; font-weight:600;">
-              Guardar
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+              Registrar producto
             </button>
-            <button type="button" class="btn ms-2 btn-danger"
-              style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-              Cancelar
+
+            <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
+              stock de producto
+            </button>
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+              Generar orden de compra
             </button>
           </div>
 
-        </form>
+          <!-- BUSCADOR -->
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
 
+          <!--TABLA PRODUCTOS -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Código de barras</th>
+                  <th>SKU</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Precio</th>
+                  <th>Fecha de registro</th>
+                  <th>Lote</th>
+                  <th>Marca</th>
+                  <th>Categoría</th>
+                  <th>Proveedor</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <?php $contador = $offset_productos + 1; ?>
+                <?php foreach ($productos as $p): ?>
+                  <tr>
+                    <td>
+                      <?= $contador++; ?>
+                    </td>
+                    <td>
+                      <?= $p['CODIGO_BARRAS']; ?>
+                    </td>
+                    <td>
+                      <?= $p['SKU']; ?>
+                    </td>
+                    <td>
+                      <?= $p['NOMBRE']; ?>
+                    </td>
+                    <td>
+                      <?= $p['DESCRIPCION']; ?>
+                    </td>
+                    <td>
+                      <?= $p['PRECIO']; ?>
+                    </td>
+                    <td>
+                      <?= $p['FECHA_REGISTRO']; ?>
+                    </td>
+                    <td>
+                      <?= $p['LOTE_ID']; ?>
+                    </td>
+                    <td>
+                      <?= $p['MARCA']; ?>
+                    </td>
+                    <td>
+                      <?= $p['CATEGORIA']; ?>
+                    </td>
+                    <td>
+                      <?= $p['PROVEEDOR']; ?>
+                    </td>
+
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-warning"
+                        onclick="window.location.href='editarProducto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-danger" onclick="eliminarProducto(<?= $u['PRODUCTO_ID']; ?>)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_productos=<?= $pagina_productos - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina_productos ?></span>
+
+              <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>"
+                href="?pagina_productos=<?= $pagina_productos + 1 ?>">
+                &gt;
+              </a>
+            </nav>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
-  </div>
 
-  <!-- SCRIPTS -->
-  <script>
-    document.getElementById("buscador").addEventListener("keyup", function () {
-      let filtro = this.value.toLowerCase();
-      let filas = document.querySelectorAll("tbody tr");
+    <!--MODAL REGISTRO DE USUARIO -->
+    <div class="modal fade" id="modalProducto" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-producto">
 
-      filas.forEach(fila => {
-        fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? "" : "none";
+          <form method="POST">
+            <input type="hidden" name="form_producto" value="1">
+            <!-- HEADER -->
+            <div class="modal-header">
+              <h5 class="modal-title">
+                Agregar producto
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+              <div class="row">
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Código de barras</label>
+                  <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">SKU</label>
+                  <input type="text" name="SKU" class="form-control input-pro">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Nombre</label>
+                  <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Precio</label>
+                  <input type="number" name="PRECIO" class="form-control input-pro" required>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label class="form-label">Descripción</label>
+                  <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Fecha de registro</label>
+                  <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Lote</label>
+                  <select name="LOTE_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($l = $lotes->fetch_assoc()): ?>
+                      <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Marca</label>
+                  <select name="MARCA_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($m = $marcas->fetch_assoc()): ?>
+                      <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Categoría</label>
+                  <select name="CATEGORIA_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($c = $categorias->fetch_assoc()): ?>
+                      <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                  <label class="form-label">Proveedor</label>
+                  <select name="PROVEEDOR_ID" class="form-control input-pro" required>
+                    <option value="">Selecciona</option>
+                    <?php while ($p = $proveedores->fetch_assoc()): ?>
+                      <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                    <?php endwhile; ?>
+                  </select>
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="btn ms-2 btn-success"
+                style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                Guardar
+              </button>
+              <button type="button" class="btn ms-2 btn-danger"
+                style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                Cancelar
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+      document.getElementById("buscador").addEventListener("keyup", function () {
+        let filtro = this.value.toLowerCase();
+        let filas = document.querySelectorAll("tbody tr");
+
+        filas.forEach(fila => {
+          fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? "" : "none";
+        });
       });
-    });
 
-    function eliminarUsuario(id) {
-      if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-        window.location.href = "eliminar_usuario.php?id=" + id;
+      function eliminarUsuario(id) {
+        if (confirm("¿Seguro que quieres eliminar este usuario?")) {
+          window.location.href = "eliminar_usuario.php?id=" + id;
+        }
       }
-    }
-  </script>
+    </script>
 
-</body>
+  </body>
 
 </html>
