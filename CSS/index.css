@@ -37,13 +37,6 @@ h2, h3, h4 {
   font-weight: 600;
 }
 
-
-
-.btn-sm {
-  margin: 2px;
-  display: inline-block !important;
-}
-
 .btn-warning {
   color: white !important;
 }
