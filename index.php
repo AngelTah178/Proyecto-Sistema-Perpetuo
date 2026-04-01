@@ -444,19 +444,124 @@
               Registrar producto
             </button>
 
-            <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
-              stock de producto
-            </button>
-            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-              Generar orden de compra
-            </button>
+            <!--MODAL REGISTRO DE USUARIO -->
+            <div class="modal fade" id="modalProducto" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content modal-producto">
+
+                  <form method="POST">
+                    <input type="hidden" name="form_producto" value="1">
+                    <!-- HEADER -->
+                    <div class="modal-header">
+                      <h5 class="modal-title">
+                        Agregar producto
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <!-- BODY -->
+                    <div class="modal-body">
+
+                      <div class="row">
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Código de barras</label>
+                          <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">SKU</label>
+                          <input type="text" name="SKU" class="form-control input-pro">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Nombre</label>
+                          <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Precio</label>
+                          <input type="number" name="PRECIO" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Descripción</label>
+                          <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Fecha de registro</label>
+                          <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Lote</label>
+                          <select name="LOTE_ID" class="form-control input-pro" required>
+                            <option value="">Selecciona</option>
+                            <?php while ($l = $lotes->fetch_assoc()): ?>
+                              <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
+                            <?php endwhile; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Marca</label>
+                          <select name="MARCA_ID" class="form-control input-pro" required>
+                            <option value="">Selecciona</option>
+                            <?php while ($m = $marcas->fetch_assoc()): ?>
+                              <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                            <?php endwhile; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Categoría</label>
+                          <select name="CATEGORIA_ID" class="form-control input-pro" required>
+                            <option value="">Selecciona</option>
+                            <?php while ($c = $categorias->fetch_assoc()): ?>
+                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                            <?php endwhile; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                          <label class="form-label">Proveedor</label>
+                          <select name="PROVEEDOR_ID" class="form-control input-pro" required>
+                            <option value="">Selecciona</option>
+                            <?php while ($p = $proveedores->fetch_assoc()): ?>
+                              <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                            <?php endwhile; ?>
+                          </select>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                      <button type="submit" class="btn ms-2 btn-success"
+                        style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                        Guardar
+                      </button>
+                      <button type="button" class="btn ms-2 btn-danger"
+                        style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                        Cancelar
+                      </button>
+                    </div>
+
+                  </form>
+
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- BUSCADOR -->
-          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
+          <div id="resultado"></div>
 
           <!--TABLA PRODUCTOS -->
-          <div class="table-responsive">
+          <div class="table-responsive" id="tablaProductos">
             <table class="table table-hover align-middle">
 
               <thead class="table-dark">
@@ -476,7 +581,7 @@
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody id="tbodyProductos">
                 <?php $contador = $offset_productos + 1; ?>
                 <?php foreach ($productos as $p): ?>
                   <tr>
@@ -547,126 +652,79 @@
       </div>
     </div>
 
-    <!--MODAL REGISTRO DE USUARIO -->
-    <div class="modal fade" id="modalProducto" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content modal-producto">
-
-          <form method="POST">
-            <input type="hidden" name="form_producto" value="1">
-            <!-- HEADER -->
-            <div class="modal-header">
-              <h5 class="modal-title">
-                Agregar producto
-              </h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <!-- BODY -->
-            <div class="modal-body">
-
-              <div class="row">
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Código de barras</label>
-                  <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">SKU</label>
-                  <input type="text" name="SKU" class="form-control input-pro">
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Nombre</label>
-                  <input type="text" name="NOMBRE" class="form-control input-pro" required>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Precio</label>
-                  <input type="number" name="PRECIO" class="form-control input-pro" required>
-                </div>
-
-                <div class="col-12 mb-3">
-                  <label class="form-label">Descripción</label>
-                  <input type="text" name="DESCRIPCION" class="form-control input-pro">
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Fecha de registro</label>
-                  <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Lote</label>
-                  <select name="LOTE_ID" class="form-control input-pro" required>
-                    <option value="">Selecciona</option>
-                    <?php while ($l = $lotes->fetch_assoc()): ?>
-                      <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
-                    <?php endwhile; ?>
-                  </select>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Marca</label>
-                  <select name="MARCA_ID" class="form-control input-pro" required>
-                    <option value="">Selecciona</option>
-                    <?php while ($m = $marcas->fetch_assoc()): ?>
-                      <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                    <?php endwhile; ?>
-                  </select>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Categoría</label>
-                  <select name="CATEGORIA_ID" class="form-control input-pro" required>
-                    <option value="">Selecciona</option>
-                    <?php while ($c = $categorias->fetch_assoc()): ?>
-                      <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                    <?php endwhile; ?>
-                  </select>
-                </div>
-
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">Proveedor</label>
-                  <select name="PROVEEDOR_ID" class="form-control input-pro" required>
-                    <option value="">Selecciona</option>
-                    <?php while ($p = $proveedores->fetch_assoc()): ?>
-                      <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
-                    <?php endwhile; ?>
-                  </select>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div class="modal-footer">
-              <button type="submit" class="btn ms-2 btn-success"
-                style="border-radius:10px; padding:8px 20px; font-weight:600;">
-                Guardar
-              </button>
-              <button type="button" class="btn ms-2 btn-danger"
-                style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                Cancelar
-              </button>
-            </div>
-
-          </form>
-
-        </div>
-      </div>
-    </div>
+    <!--AUN NO SE QUE CHOW CON ESTOS BOTONES -->
+    <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
+      stock de producto
+    </button>
+    <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+      Generar orden de compra
+    </button>
+    
 
     <!-- SCRIPTS -->
     <script>
-      document.getElementById("buscador").addEventListener("keyup", function () {
-        let filtro = this.value.toLowerCase();
-        let filas = document.querySelectorAll("tbody tr");
+      const input = document.getElementById("buscador");
+      input.addEventListener("keyup", function() {
 
-        filas.forEach(fila => {
-          fila.style.display = fila.innerText.toLowerCase().includes(filtro) ? "" : "none";
-        });
+        let valor = input.value.trim();
+
+        if (valor === "") {
+          location.reload(); // vuelve a la tabla normal
+          return;
+        }
+
+        fetch("buscarGeneral.php?q=" + valor)
+          .then(res => res.json())
+          .then(data => {
+
+            let html = "";
+
+            if (data.length === 0) {
+              html = `
+                <tr>
+                  <td colspan="12" class="text-center text-danger">
+                    No se encontraron resultados
+                  </td>
+                </tr>
+              `;
+            } else {
+
+              data.forEach((p, index) => {
+                html += `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${p.CODIGO_BARRAS}</td>
+                    <td>${p.SKU}</td>
+                    <td>${p.NOMBRE}</td>
+                    <td>${p.DESCRIPCION}</td>
+                    <td>${p.PRECIO}</td>
+                    <td>${p.FECHA_REGISTRO}</td>
+                    <td>${p.LOTE_ID}</td>
+                    <td>${p.MARCA}</td>
+                    <td>${p.CATEGORIA}</td>
+                    <td>${p.PROVEEDOR}</td>
+
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-warning"
+                        onclick="window.location.href='editarProducto.php?id=${p.PRODUCTO_ID}'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-danger"
+                        onclick="if(confirm('¿Eliminar producto?')) window.location.href='eliminarProducto.php?id=${p.PRODUCTO_ID}'">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              });
+
+            }
+
+            document.getElementById("tbodyProductos").innerHTML = html;
+
+          });
+
       });
 
       function eliminarUsuario(id) {
