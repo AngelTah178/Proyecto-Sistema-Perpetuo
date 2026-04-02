@@ -146,8 +146,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body>
     <?php include 'include/navbar.php'; ?>
     <br><br><br><br>
-    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalExistencias">
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalExistencias">
         Registrar existencias
+    </button>
+
+    <button class="btn btn-danger" onclick="window.location.href='index.php'">
+        Salir
     </button>
     <!--Modal de registro de usuarios-->
     <div class="modal fade" id="modalExistencias" tabindex="-1">
