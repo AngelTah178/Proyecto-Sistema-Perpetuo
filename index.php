@@ -60,6 +60,38 @@
   }
   //====================FIN INSERTAR PRODUCTO====================
 
+  // ================== ACTUALIZAR PRODUCTO ==================
+  if (isset($_POST['form_editar_producto'])) {
+
+    $id = $_POST['PRODUCTO_ID'];
+    $nombre = $_POST['NOMBRE'];
+    $precio = $_POST['PRECIO'];
+    $marca = $_POST['MARCA_ID'];
+    $categoria = $_POST['CATEGORIA_ID'];
+    $proveedor = $_POST['PROVEEDOR_ID'];
+    $lote = $_POST['LOTE_ID'];
+
+    $stmt = $conn->prepare("
+      UPDATE productos SET 
+        NOMBRE = ?, 
+        PRECIO = ?, 
+        MARCA_ID = ?, 
+        CATEGORIA_ID = ?, 
+        PROVEEDOR_ID = ?, 
+        LOTE_ID = ?
+      WHERE PRODUCTO_ID = ?
+    ");
+
+    $stmt->bind_param("sdiiiii", $nombre, $precio, $marca, $categoria, $proveedor, $lote, $id);
+
+    if ($stmt->execute()) {
+      header("Location: index.php");
+      exit();
+    } else {
+      echo "Error al actualizar producto: " . $stmt->error;
+    }
+  }
+
   // ================== INSERTAR USUARIO ==================
   if (isset($_POST['form_usuario'])) {
 
@@ -113,55 +145,76 @@
       echo "Faltan campos obligatorios del usuario";
     }
   }
-  // ================== CONSULTAS ==================
 
   // ================== PAGINACIÓN ==================
-  $registros_por_pagina = 10;
+    $registros_por_pagina = 10;
 
-  // USUARIOS
-  $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
-  if ($pagina < 1) $pagina = 1;
+    // USUARIOS
+    $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+    if ($pagina < 1) $pagina = 1;
 
-  $offset = ($pagina - 1) * $registros_por_pagina;
+    $offset = ($pagina - 1) * $registros_por_pagina;
 
-  $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
-  $total_paginas = ceil($total_usuarios / $registros_por_pagina);
+    $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
+    $total_paginas = ceil($total_usuarios / $registros_por_pagina);
 
-  $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
-  $total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
+    $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
+    $total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
 
-  // PRODUCTOS
-  $pagina_productos = isset($_GET['pagina_productos']) ? (int)$_GET['pagina_productos'] : 1;
-  if ($pagina_productos < 1) $pagina_productos = 1;
+    // PRODUCTOS
+    $pagina_productos = isset($_GET['pagina_productos']) ? (int)$_GET['pagina_productos'] : 1;
+    if ($pagina_productos < 1) $pagina_productos = 1;
 
-  $offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
+    $offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
 
-  $total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
-  $total_paginas_productos = ceil($total_productos / $registros_por_pagina);
-  
-  $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
-  $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+    $total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
+    $total_paginas_productos = ceil($total_productos / $registros_por_pagina);
+    
+    $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
+    $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+  // ================== FIN PAGINACIÓN ==================
 
+  // ================== MOVIMIENTOS ==================
+    $movimientos = $conn->query("
+      SELECT 
+        m.ID_MOVIMIENTO,
+        m.FECHA_REGISTRO,
+        m.CANTIDAD,
+        tm.MOVIMIENTO,
+        u.NOMBRE AS USUARIO,
+        p.NOMBRE AS PRODUCTO,
+        pr.NOMBRE AS PROVEEDOR,
+        m.ALMACEN_ID
+      FROM movimientos m
+      LEFT JOIN tipo_movimientos tm ON m.TIPO_ID = tm.TIPO_ID
+      LEFT JOIN usuarios u ON m.ID_USUARIO = u.ID_USUARIO
+      LEFT JOIN productos p ON m.PRODUCTO_ID = p.PRODUCTO_ID
+      LEFT JOIN proveedores pr ON m.PROVEEDOR_ID = pr.PROVEEDOR_ID
+      ORDER BY m.ID_MOVIMIENTO DESC
+    ");
+  // ================== FIN MOVIMIENTOS ==================
 
-  $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
+  // ================== CONSULTAS ==================
+    $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
 
-  $productos = $conn->query("
-    SELECT 
-      p.*, 
-      m.NOMBRE AS MARCA, 
-      c.NOMBRE AS CATEGORIA, 
-      pr.NOMBRE AS PROVEEDOR
-    FROM productos p
-    LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
-    LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
-    LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
-    LIMIT $offset_productos, $registros_por_pagina
-  ")->fetch_all(MYSQLI_ASSOC);
+    $productos = $conn->query("
+      SELECT 
+        p.*, 
+        m.NOMBRE AS MARCA, 
+        c.NOMBRE AS CATEGORIA, 
+        pr.NOMBRE AS PROVEEDOR
+      FROM productos p
+      LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+      LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+      LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+      LIMIT $offset_productos, $registros_por_pagina
+    ")->fetch_all(MYSQLI_ASSOC);
 
-  $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
-  $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
-  $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
-  $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+    $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+    $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+    $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+    $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+  // ================== FIN DE CONSULTAS ==================
 
   #TOKEN PARA CONOCER MOVIMIENTOS
 ?>
@@ -256,7 +309,7 @@
 
       </div>
 
-      <!-- GESTIÓN DE USUARIOS -->
+      <!-- TABLAS DE USUARIOS / PRODUCTOS -->
       <div class="card shadow-sm p-4">
         <?php if ($rol == 'admin'): ?>
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -620,10 +673,85 @@
                     </td>
 
                     <td class="text-center">
-                      <button class="btn btn-sm btn-warning"
-                        onclick="window.location.href='editarProducto.php?id=<?= $p['PRODUCTO_ID']; ?>'">
+                      <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
                         <i class="bi bi-pencil"></i>
                       </button>
+                      <!-- MODAL EDITAR PRODUCTO -->
+                      <div class="modal fade" id="modalEditarProducto" tabindex="-1">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                          <div class="modal-content">
+
+                            <form method="POST">
+                              <input type="hidden" name="form_editar_producto" value="1">
+                              <input type="hidden" name="PRODUCTO_ID" id="edit_id">
+
+                              <div class="modal-header">
+                                <h5 class="modal-title">Editar producto</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+
+                              <div class="modal-body">
+                                <div class="row">
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Nombre</label>
+                                    <input type="text" name="NOMBRE" id="edit_nombre" class="form-control">
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Precio</label>
+                                    <input type="number" name="PRECIO" id="edit_precio" class="form-control">
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Marca</label>
+                                    <select name="MARCA_ID" id="edit_marca" class="form-control">
+                                      <?php foreach ($marcas as $m): ?>
+                                        <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Categoría</label>
+                                    <select name="CATEGORIA_ID" id="edit_categoria" class="form-control">
+                                      <?php foreach ($categorias as $c): ?>
+                                        <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Proveedor</label>
+                                    <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
+                                      <?php foreach ($proveedores as $p): ?>
+                                        <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Lote</label>
+                                    <select name="LOTE_ID" id="edit_lote" class="form-control">
+                                      <?php foreach ($lotes as $l): ?>
+                                        <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                </div>
+                              </div>
+
+                              <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Guardar cambios</button>
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                              </div>
+
+                            </form>
+
+                          </div>
+                        </div>
+                      </div>
 
                       <button class="btn btn-sm btn-danger" onclick="eliminarProducto(<?= $u['PRODUCTO_ID']; ?>)">
                         <i class="bi bi-trash"></i>
@@ -650,6 +778,53 @@
           </div>
         <?php endif; ?>
       </div>
+
+      <!-- GESTIÓN DE MOVIMIENTOS -->
+      <?php if ($rol == 'empleado'): ?>
+      <div class="card shadow-sm p-4 mt-4">
+        <h4>Gestión de Movimientos</h4>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Usuario</th>
+                <th>Proveedor</th>
+                <th>Almacén</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <?php foreach ($movimientos as $m): ?>
+                <tr>
+                  <td><?= $m['ID_MOVIMIENTO'] ?></td>
+                  <td><?= $m['FECHA_REGISTRO'] ?></td>
+
+                  <td>
+                    <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
+                      <?= $m['MOVIMIENTO'] ?>
+                    </span>
+                  </td>
+
+                  <td><?= $m['PRODUCTO'] ?></td>
+                  <td><?= $m['CANTIDAD'] ?></td>
+                  <td><?= $m['USUARIO'] ?></td>
+                  <td><?= $m['PROVEEDOR'] ?></td>
+                  <td><?= $m['ALMACEN_ID'] ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+
+          </table>
+        </div>
+      </div>
+      <?php endif; ?>
     </div>
 
     <!--AUN NO SE QUE CHOW CON ESTOS BOTONES -->
@@ -726,6 +901,20 @@
           });
 
       });
+
+      function abrirModalEditar(producto) {
+        document.getElementById("edit_id").value = producto.PRODUCTO_ID;
+        document.getElementById("edit_nombre").value = producto.NOMBRE;
+        document.getElementById("edit_precio").value = producto.PRECIO;
+
+        document.getElementById("edit_marca").value = producto.MARCA_ID;
+        document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
+        document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
+        document.getElementById("edit_lote").value = producto.LOTE_ID;
+
+        let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
+        modal.show();
+      }
 
       function eliminarUsuario(id) {
         if (confirm("¿Seguro que quieres eliminar este usuario?")) {
