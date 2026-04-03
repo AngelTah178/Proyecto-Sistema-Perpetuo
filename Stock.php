@@ -144,6 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 
 <body>
+
+
     <?php include 'include/navbar.php'; ?>
     <br><br><br><br>
     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalExistencias">
@@ -163,18 +165,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     <h4>Registrar Entrada</h4>
 
-                    <?php $productos = $conn->query("SELECT PRODUCTO_ID, NOMBRE FROM productos"); ?>
+                    <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
                     <div class="mb-3">
-                        <label>Producto</label>
-                        <select name="PRODUCTO_ID" class="form-control" required>
-                            <option value="">Selecciona producto</option>
-                            <?php while ($p = $productos->fetch_assoc()): ?>
-                                <option value="<?= $p['PRODUCTO_ID'] ?>">
-                                    <?= $p['NOMBRE'] ?>
+                        <label>Proveedor</label>
+                        <select name="PROVEEDOR_ID" id="proveedor" class="form-control" required>
+                            <option value="">Selecciona proveedor</option>
+                            <?php while ($pr = $proveedores->fetch_assoc()): ?>
+                                <option value="<?= $pr['PROVEEDOR_ID'] ?>">
+                                    <?= $pr['NOMBRE'] ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
+
+                    <div class="mb-3">
+                        <label>Producto</label>
+                        <select name="PRODUCTO_ID" id="producto" class="form-control" required disabled>
+                            <option value="">Selecciona primero un proveedor</option>
+                        </select>
+                    </div>
+
 
                     <div class="mb-3">
                         <label>Unidades</label>
@@ -189,19 +199,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <?php while ($a = $almacenes->fetch_assoc()): ?>
                                 <option value="<?= $a['ALMACEN_ID'] ?>">
                                     <?= $a['ALMACEN'] ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-
-                    <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
-                    <div class="mb-3">
-                        <label>Proveedor</label>
-                        <select name="PROVEEDOR_ID" class="form-control" required>
-                            <option value="">Selecciona proveedor</option>
-                            <?php while ($pr = $proveedores->fetch_assoc()): ?>
-                                <option value="<?= $pr['PROVEEDOR_ID'] ?>">
-                                    <?= $pr['NOMBRE'] ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -262,7 +259,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <?php else: ?>
         <p>NO HAY REGISTROS</p>
     <?php endif; ?>
-    </div>
+
+    <!--SCRIPT PARA VALIDAR SI SE SELECCIONIÓ UN PROVEEDOR--->
+    <script>
+        const proveedor = document.getElementById("proveedor");
+        const producto = document.getElementById("producto");
+
+        proveedor.addEventListener("change", function () {
+            let proveedorId = this.value;
+
+            // Reset
+            producto.innerHTML = '<option value="">Cargando...</option>';
+            producto.disabled = true;
+
+            if (proveedorId === "") {
+                producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
+                return;
+            }
+
+            fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
+                .then(response => response.text())
+                .then(data => {
+                    producto.innerHTML = data;
+                    producto.disabled = false;
+                });
+        });
+    </script>
+    <!---FIN DE VALIDAR SI SE SELECCIONÓ UN PROVEEDOR-->
 </body>
 
 </html>
