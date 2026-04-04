@@ -793,50 +793,123 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
     </div>
 
     <!-- GESTIÓN DE MOVIMIENTOS -->
+
     <?php if ($rol == 'empleado'): ?>
       <div class="card shadow-sm p-4 mt-4">
         <h4>Gestión de Movimientos</h4>
 
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReporte">
+            Generar reporte
+          </button>
+          <!---INICIO MODAL REPORTES--->
+        <div class="modal fade" id="modalReporte">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
 
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Usuario</th>
-                <th>Proveedor</th>
-                <th>Almacén</th>
-              </tr>
-            </thead>
+              <div class="modal-header">
+                <h5>Generar Reporte</h5>
+              </div>
 
-            <tbody>
-              <?php foreach ($movimientos as $m): ?>
-                <tr>
-                  <td><?= $m['ID_MOVIMIENTO'] ?></td>
-                  <td><?= $m['FECHA_REGISTRO'] ?></td>
+              <div class="modal-body">
 
-                  <td>
-                    <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
-                      <?= $m['MOVIMIENTO'] ?>
-                    </span>
-                  </td>
+                <!-- FILTROS -->
+                  <div class="row">
+                    <div class="col">
+                      <label>Fecha inicio</label>
+                      <input type="date" id="fecha_inicio" class="form-control">
+                    </div>
 
-                  <td><?= $m['PRODUCTO'] ?></td>
-                  <td><?= $m['CANTIDAD'] ?></td>
-                  <td><?= $m['USUARIO'] ?></td>
-                  <td><?= $m['PROVEEDOR'] ?></td>
-                  <td><?= $m['ALMACEN_ID'] ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
+                    <div class="col">
+                      <label>Fecha fin</label>
+                      <input type="date" id="fecha_fin" class="form-control">
+                    </div>
 
-          </table>
-        </div>
+                    <div class="col">
+                      <label>Tipo</label>
+                      <select id="tipo" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="1">Entradas</option>
+                        <option value="2">Salidas</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <br>
+
+                  <button class="btn btn-success" onclick="buscarReporte()">
+                    Buscar
+                  </button>
+
+                  <!-- TABLA -->
+                  <div id="tabla_reporte"></div>
+
+                </div>
+                
+                <button class="btn btn-success">Imprimir</button>
+
+                <button type="button" class="btn ms-2 btn-danger"
+                  style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
+
+              </div>
+            </div>
+          </div>
+          <!----FIN MODAL REPORTES--->
+        <table class="table table-hover align-middle">
+
+          <thead class="table-dark">
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Usuario</th>
+              <th>Proveedor</th>
+              <th>Almacén</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <?php foreach ($movimientos as $m): ?>
+            <tr>
+              <td>
+                <?= $m['ID_MOVIMIENTO'] ?>
+              </td>
+              <td>
+                <?= $m['FECHA_REGISTRO'] ?>
+              </td>
+
+              <td>
+                <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
+                  <?= $m['MOVIMIENTO'] ?>
+                </span>
+              </td>
+
+              <td>
+                <?= $m['PRODUCTO'] ?>
+              </td>
+              <td>
+                <?= $m['CANTIDAD'] ?>
+              </td>
+              <td>
+                <?= $m['USUARIO'] ?>
+              </td>
+              <td>
+                <?= $m['PROVEEDOR'] ?>
+              </td>
+              <td>
+                <?= $m['ALMACEN_ID'] ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+
+        </table>
       </div>
+    </div>
     <?php endif; ?>
   </div>
 
@@ -934,6 +1007,20 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
         window.location.href = "eliminar_usuario.php?id=" + id;
       }
     }
+
+    ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
+    function buscarReporte() {
+      let inicio = document.getElementById("fecha_inicio").value;
+      let fin = document.getElementById("fecha_fin").value;
+      let tipo = document.getElementById("tipo").value;
+
+      fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById("tabla_reporte").innerHTML = data;
+        });
+    }
+
   </script>
 
 </body>
