@@ -776,13 +776,15 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
             </tbody>
           </table>
           <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>" href="?pagina_productos=<?= $pagina_productos - 1 ?>">
+            <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
+              href="?pagina_productos=<?= $pagina_productos - 1 ?>">
               &lt;
             </a>
 
             <span class="fw-bold"><?= $pagina_productos ?></span>
 
-            <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>" href="?pagina_productos=<?= $pagina_productos + 1 ?>">
+            <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>"
+              href="?pagina_productos=<?= $pagina_productos + 1 ?>">
               &gt;
             </a>
           </nav>
@@ -897,7 +899,7 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
                       </button>
 
                       <button class="btn btn-sm btn-danger"
-                        onclick="if(confirm('¿Eliminar producto?')) window.location.href='eliminarProducto.php?id=${p.PRODUCTO_ID}'">
+                        onclick="if(confirm('¿Eliminar producto?')) window.location.href='EliminarProducto.php?id=${p.PRODUCTO_ID}'">
                         <i class="bi bi-trash"></i>
                       </button>
                     </td>
