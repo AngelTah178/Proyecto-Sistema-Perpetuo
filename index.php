@@ -2,6 +2,7 @@
 session_start();
 include "conexion.php";
 
+
 // ================== VALIDAR SESIÓN ==================
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
   header("Location: login.php");
@@ -27,33 +28,43 @@ if (isset($_POST['form_producto'])) {
   // Validación básica
   if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
 
-    $stmt = $conn->prepare("
+    // Validación de lo duplicado
+    $check = $conn->prepare("SELECT PRODUCTO_ID FROM productos WHERE CODIGO_BARRAS = ?");
+    $check->bind_param("s", $CODIGO_BARRAS);
+    $check->execute();
+    $resultado = $check->get_result();
+
+    if ($resultado->num_rows > 0) {
+      echo "<script>alert('Este código de barras ya está registrado');</script>";
+    } else {
+
+      $stmt = $conn->prepare("
         INSERT INTO productos 
         (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ");
 
-    $stmt->bind_param(
-      "ssssdsiiii",
-      $CODIGO_BARRAS,
-      $SKU,
-      $NOMBRE,
-      $DESCRIPCION,
-      $PRECIO,
-      $FECHA_REGISTRO,
-      $LOTE_ID,
-      $MARCA_ID,
-      $CATEGORIA_ID,
-      $PROVEEDOR_ID
-    );
+      $stmt->bind_param(
+        "ssssdsiiii",
+        $CODIGO_BARRAS,
+        $SKU,
+        $NOMBRE,
+        $DESCRIPCION,
+        $PRECIO,
+        $FECHA_REGISTRO,
+        $LOTE_ID,
+        $MARCA_ID,
+        $CATEGORIA_ID,
+        $PROVEEDOR_ID
+      );
 
-    if ($stmt->execute()) {
-      header("Location: index.php");
-      exit();
-    } else {
-      echo "Error al insertar producto: " . $stmt->error;
+      if ($stmt->execute()) {
+        header("Location: index.php");
+        exit();
+      } else {
+        echo "Error al insertar producto: " . $stmt->error;
+      }
     }
-
   } else {
     echo "Faltan datos obligatorios del producto";
   }
