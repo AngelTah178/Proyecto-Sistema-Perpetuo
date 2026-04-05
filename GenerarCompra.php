@@ -240,7 +240,7 @@ if (isset($_POST['confirmar'])) {
                     Confirmar compra
                 </button>
 
-                <button class="btn btn-success" onclick="window.location.href='Stock.php'">Salir</button>
+                <button class="btn btn-success" onclick="window.location.href='index.php'">Salir</button>
         </form>
 
 

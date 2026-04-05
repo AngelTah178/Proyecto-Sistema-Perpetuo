@@ -226,6 +226,26 @@
     $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
     $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
 
+    $stock = $conn->query("
+      SELECT 
+        p.NOMBRE,
+        p.CODIGO_BARRAS,
+        m.NOMBRE AS MARCA,
+        l.LOTE_ID,
+        a.ALMACEN,
+        u.PASILLO,
+        u.ESTANTE,
+        u.NIVEL,
+        u.SECCION,
+        s.UNIDADES
+
+      FROM stock s
+      INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
+      LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+      LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
+      INNER JOIN almacenes a ON s.ALMACEN_ID = a.ALMACEN_ID
+      INNER JOIN ubicaciones u ON s.UBICACION_ID = u.UBICACION_ID
+    ");
   // ================== FIN DE CONSULTAS ==================
 
   #TOKEN PARA CONOCER MOVIMIENTOS
@@ -501,16 +521,11 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Productos</h4>
 
-            <div class="d-flex gap-2">
-              <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
-                Generar orden de compra
-              </button>
-
-              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-                Registrar producto
-              </button>
-            </div>
-
+            
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+              Registrar producto
+            </button>
+            
             <!--MODAL REGISTRO DE USUARIO -->
             <div class="modal fade" id="modalProducto" tabindex="-1">
               <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -793,6 +808,160 @@
         <?php endif; ?>
       </div>
   
+      <!-- GESTIÓN DE STOCK -->
+      <?php if ($rol == 'empleado') : ?>
+        <div class="card shadow-sm p-4 mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Stock</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
+                Generar venta
+              </button>
+
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalExistencias">
+                Generar compra
+              </button>
+
+              <!--Modal de registro de stock-->
+              <div class="modal fade" id="modalExistencias" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content modal-existencias">
+                    <form method="POST">
+                      <input type="hidden" name="form_existencas" value="1">
+                      <h4>Registrar Entrada</h4>
+                      <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
+                      <div class="mb-3">
+                        <label>Proveedor</label>
+                        <select name="PROVEEDOR_ID" id="proveedor" class="form-control" required>
+                          <option value="">Selecciona proveedor</option>
+                          <?php while ($pr = $proveedores->fetch_assoc()): ?>
+                            <option value="<?= $pr['PROVEEDOR_ID'] ?>">
+                              <?= $pr['NOMBRE'] ?>
+                            </option>
+                          <?php endwhile; ?>
+                        </select>
+                      </div>
+
+                      <div class="mb-3">
+                        <label>Producto</label>
+                        <select name="PRODUCTO_ID" id="producto" class="form-control" required disabled>
+                          <option value="">Selecciona primero un proveedor</option>
+                        </select>
+                      </div>
+
+
+                      <div class="mb-3">
+                        <label>Unidades</label>
+                        <input type="number" name="UNIDADES" class="form-control" required>
+                      </div>
+
+                      <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
+                      <div class="mb-3">
+                        <label>Almacén</label>
+                        <select name="ALMACEN_ID" class="form-control" required>
+                          <option value="">Selecciona almacén</option>
+                          <?php while ($a = $almacenes->fetch_assoc()): ?>
+                            <option value="<?= $a['ALMACEN_ID'] ?>">
+                              <?= $a['ALMACEN'] ?>
+                            </option>
+                          <?php endwhile; ?>
+                        </select>
+                      </div>
+
+                      <!----INICIO UBICACIONES---->
+                      <hr>
+                      <h5>Registrar nueva ubicación</h5>
+
+                      <div class="mb-2">
+                        <input type="text" name="PASILLO" class="form-control" placeholder="Pasillo" required>
+                      </div>
+
+                      <div class="mb-2">
+                        <input type="text" name="SECCION" class="form-control" placeholder="Sección" required>
+                      </div>
+
+                      <div class="mb-2">
+                        <input type="text" name="NIVEL" class="form-control" placeholder="Nivel" required>
+                      </div>
+
+                      <div class="mb-2">
+                        <input type="text" name="ESTANTE" class="form-control" placeholder="Estante" required>
+                      </div>
+
+                      <input type="hidden" name="crear_ubicacion" value="1">
+                      <!----FIN UBICACIONES---->
+
+                      <div class="mb-3">
+                        <label>Fecha</label>
+                        <input type="date" name="FECHA_REGISTRO" class="form-control" required>
+                      </div>
+
+                      <div class="modal-footer">
+                        <button type="submit" class="btn ms-2 btn-success" style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                          Guardar
+                        </button>
+                        <button type="button" class="btn ms-2 btn-danger" style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>  
+          </div>
+
+          <!-- BUSCADOR -->
+          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
+          <div id="resultado"></div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Código de barras</th>
+                  <th>Nombre</th>
+                  <th>Marca</th>
+                  <th>Unidades</th>
+                  <th>Lote</th>
+                  <th>Almacén</th>
+                  <th>Ubicación</th>
+                </tr>
+              </thead>
+
+              <tbody id="tbodyStock">
+                <?php $contador = 1; ?>
+                <?php while ($s = $stock->fetch_assoc()): ?>
+                  <tr>
+                    <td><?= $contador++; ?></td>
+
+                    <td><?= $s['CODIGO_BARRAS']; ?></td>
+                    <td><?= $s['NOMBRE']; ?></td>
+                    <td><?= $s['MARCA']; ?></td>
+                    <td><?= $s['UNIDADES']; ?></td>
+                    <td><?= $s['LOTE_ID']; ?></td>
+                    <td><?= $s['ALMACEN']; ?></td>
+
+                    <td>
+                      <span class="badge bg-info text-dark">
+                        P<?= $s['PASILLO']; ?> -
+                        E<?= $s['ESTANTE']; ?> -
+                        N<?= $s['NIVEL']; ?> -
+                        S<?= $s['SECCION']; ?>
+                      </span>
+                    </td>
+
+                  </tr>
+                <?php endwhile; ?>
+              </tbody>
+
+            </table>
+          </div>
+        </div>
+      <?php endif; ?>
+                                        
       <!-- GESTIÓN DE MOVIMIENTOS -->
       <?php if ($rol == 'empleado'): ?>
         <div class="card shadow-sm p-4 mt-4">
@@ -856,7 +1025,6 @@
             </div>
           </div>
           
-
           <div class="table-responsive">                
             <table class="table table-hover align-middle">
 
@@ -895,13 +1063,6 @@
         </div>
       <?php endif; ?>
     </div>
-
-    <!--AUN NO SE QUE CHOW CON ESTOS BOTONES -->
-    <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
-      stock de producto
-    </button>
-  
-
 
     <!-- SCRIPTS -->
     <script>
