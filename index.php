@@ -147,75 +147,78 @@ if (isset($_POST['form_usuario'])) {
 }
 
 // ================== PAGINACIÓN ==================
-$registros_por_pagina = 10;
+  $registros_por_pagina = 10;
 
-// USUARIOS
-$pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
-if ($pagina < 1)
-  $pagina = 1;
+  // USUARIOS
+  $pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
+  if ($pagina < 1)
+    $pagina = 1;
 
-$offset = ($pagina - 1) * $registros_por_pagina;
+  $offset = ($pagina - 1) * $registros_por_pagina;
 
-$total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
-$total_paginas = ceil($total_usuarios / $registros_por_pagina);
+  $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
+  $total_paginas = ceil($total_usuarios / $registros_por_pagina);
 
-$total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
-$total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
+  $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
+  $total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
 
-// PRODUCTOS
-$pagina_productos = isset($_GET['pagina_productos']) ? (int) $_GET['pagina_productos'] : 1;
-if ($pagina_productos < 1)
-  $pagina_productos = 1;
+  // PRODUCTOS
+  $pagina_productos = isset($_GET['pagina_productos']) ? (int) $_GET['pagina_productos'] : 1;
+  if ($pagina_productos < 1)
+    $pagina_productos = 1;
 
-$offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
+  $offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
 
-$total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
-$total_paginas_productos = ceil($total_productos / $registros_por_pagina);
+  $total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
+  $total_paginas_productos = ceil($total_productos / $registros_por_pagina);
 
-$total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
-$total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+  $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
+  $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
 // ================== FIN PAGINACIÓN ==================
 
 // ================== MOVIMIENTOS ==================
-$movimientos = $conn->query("
-      SELECT 
-        m.ID_MOVIMIENTO,
-        m.FECHA_REGISTRO,
-        m.CANTIDAD,
-        tm.MOVIMIENTO,
-        u.NOMBRE AS USUARIO,
-        p.NOMBRE AS PRODUCTO,
-        pr.NOMBRE AS PROVEEDOR,
-        m.ALMACEN_ID
-      FROM movimientos m
-      LEFT JOIN tipo_movimientos tm ON m.TIPO_ID = tm.TIPO_ID
-      LEFT JOIN usuarios u ON m.ID_USUARIO = u.ID_USUARIO
-      LEFT JOIN productos p ON m.PRODUCTO_ID = p.PRODUCTO_ID
-      LEFT JOIN proveedores pr ON m.PROVEEDOR_ID = pr.PROVEEDOR_ID
-      ORDER BY m.ID_MOVIMIENTO DESC
-    ");
+  $movimientos = $conn->query("
+    SELECT 
+      m.ID_MOVIMIENTO,
+      m.FECHA_REGISTRO,
+      m.CANTIDAD,
+      tm.MOVIMIENTO,
+      u.NOMBRE AS USUARIO,
+      p.NOMBRE AS PRODUCTO,
+      pr.NOMBRE AS PROVEEDOR,
+      m.ALMACEN_ID
+    FROM movimientos m
+    LEFT JOIN tipo_movimientos tm ON m.TIPO_ID = tm.TIPO_ID
+    LEFT JOIN usuarios u ON m.ID_USUARIO = u.ID_USUARIO
+    LEFT JOIN productos p ON m.PRODUCTO_ID = p.PRODUCTO_ID
+    LEFT JOIN proveedores pr ON m.PROVEEDOR_ID = pr.PROVEEDOR_ID
+    ORDER BY m.ID_MOVIMIENTO DESC
+  ");
 // ================== FIN MOVIMIENTOS ==================
 
 // ================== CONSULTAS ==================
-$usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
+  $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
 
-$productos = $conn->query("
-      SELECT 
-        p.*, 
-        m.NOMBRE AS MARCA, 
-        c.NOMBRE AS CATEGORIA, 
-        pr.NOMBRE AS PROVEEDOR
-      FROM productos p
-      LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
-      LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
-      LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
-      LIMIT $offset_productos, $registros_por_pagina
-    ")->fetch_all(MYSQLI_ASSOC);
+  $productos = $conn->query("
+    SELECT 
+      p.*, 
+      m.NOMBRE AS MARCA, 
+      c.NOMBRE AS CATEGORIA, 
+      pr.NOMBRE AS PROVEEDOR
+    FROM productos p
+    LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+    LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+    LIMIT $offset_productos, $registros_por_pagina
+  ")->fetch_all(MYSQLI_ASSOC);
 
-$lotes = $conn->query("SELECT LOTE_ID FROM lotes");
-$marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
-$categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
-$proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+  $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+  $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+  $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+  $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+
+  
+  
 // ================== FIN DE CONSULTAS ==================
 
 #TOKEN PARA CONOCER MOVIMIENTOS
@@ -495,9 +498,15 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4>Gestión de Productos</h4>
 
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-            Registrar producto
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
+              Generar orden de compra
+            </button>
+
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+              Registrar producto
+            </button>
+          </div>
 
           <!--MODAL REGISTRO DE USUARIO -->
           <div class="modal fade" id="modalProducto" tabindex="-1">
@@ -778,7 +787,7 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
         </div>
       <?php endif; ?>
     </div>
-
+  
     <!-- GESTIÓN DE MOVIMIENTOS -->
     <?php if ($rol == 'empleado'): ?>
       <div class="card shadow-sm p-4 mt-4">
@@ -789,7 +798,6 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
 
             <thead class="table-dark">
               <tr>
-                <th>#</th>
                 <th>Fecha</th>
                 <th>Tipo</th>
                 <th>Producto</th>
@@ -803,7 +811,6 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
             <tbody>
               <?php foreach ($movimientos as $m): ?>
                 <tr>
-                  <td><?= $m['ID_MOVIMIENTO'] ?></td>
                   <td><?= $m['FECHA_REGISTRO'] ?></td>
 
                   <td>
@@ -831,9 +838,7 @@ $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
   <button class="btn btn-sm btn-warning" onclick="window.location.href='Stock.php'">
     stock de producto
   </button>
-  <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
-    Generar orden de compra
-  </button>
+  
 
 
   <!-- SCRIPTS -->
