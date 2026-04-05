@@ -61,11 +61,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $almacen_id = $_POST['ALMACEN_ID'];
     $proveedor_id = $_POST['PROVEEDOR_ID'];
     $unidades = $_POST['UNIDADES'];
+    $ubicacion_id = $conn->insert_id;
     $fecha = date('Y-m-d H:i:s');
     $id_usuario = $_SESSION['ID_USUARIO'];
 
-    $conn->begin_transaction();
+    $ubicacion_id = null;
 
+
+    if (
+        !empty($_POST['PASILLO']) &&
+        !empty($_POST['SECCION']) &&
+        !empty($_POST['NIVEL']) &&
+        !empty($_POST['ESTANTE'])
+    ) {
+        $stmt = $conn->prepare(
+            "INSERT INTO ubicaciones (PASILLO, SECCION, NIVEL, ESTANTE, ALMACEN_ID)
+             VALUES (?, ?, ?, ?, ?)"
+        );
+
+        $stmt->bind_param(
+            "ssssi",
+            $_POST['PASILLO'],
+            $_POST['SECCION'],
+            $_POST['NIVEL'],
+            $_POST['ESTANTE'],
+            $almacen_id // ✅ YA TIENE VALOR
+        );
+
+        $stmt->execute();
+
+        $ubicacion_id = $conn->insert_id;
+    }
+
+    $conn->begin_transaction();
     try {
 
         // ================== VERIFICAR STOCK ==================
@@ -95,10 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $insert = $conn->prepare(
                 "INSERT INTO stock 
-                (PRODUCTO_ID, ALMACEN_ID, UNIDADES, FECHA_REGISTRO)
-                VALUES (?, ?, ?, ?)"
+    (PRODUCTO_ID, ALMACEN_ID, UNIDADES, FECHA_REGISTRO, UBICACION_ID)
+    VALUES (?, ?, ?, ?, ?)"
             );
-            $insert->bind_param("iiis", $producto_id, $almacen_id, $unidades, $fecha);
+
+            $insert->bind_param(
+                "iiisi",
+                $producto_id,
+                $almacen_id,
+                $unidades,
+                $fecha,
+                $ubicacion_id
+            );
+
             $insert->execute();
         }
 
@@ -203,6 +240,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <?php endwhile; ?>
                         </select>
                     </div>
+                    <!----INICIO UBICACIONES---->
+                    <hr>
+                    <h5>Registrar nueva ubicación</h5>
+
+                    <div class="mb-2">
+                        <input type="text" name="PASILLO" class="form-control" placeholder="Pasillo" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <input type="text" name="SECCION" class="form-control" placeholder="Sección" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <input type="text" name="NIVEL" class="form-control" placeholder="Nivel" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <input type="text" name="ESTANTE" class="form-control" placeholder="Estante" required>
+                    </div>
+
+                    <input type="hidden" name="crear_ubicacion" value="1">
+                    <!----FIN UBICACIONES---->
 
                     <div class="mb-3">
                         <label>Fecha</label>

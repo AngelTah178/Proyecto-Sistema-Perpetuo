@@ -2,6 +2,7 @@
 session_start();
 include "conexion.php";
 
+
 // ================== VALIDAR SESIÓN ==================
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
   header("Location: login.php");
@@ -27,33 +28,43 @@ if (isset($_POST['form_producto'])) {
   // Validación básica
   if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
 
-    $stmt = $conn->prepare("
+    // Validación de lo duplicado
+    $check = $conn->prepare("SELECT PRODUCTO_ID FROM productos WHERE CODIGO_BARRAS = ?");
+    $check->bind_param("s", $CODIGO_BARRAS);
+    $check->execute();
+    $resultado = $check->get_result();
+
+    if ($resultado->num_rows > 0) {
+      echo "<script>alert('Este código de barras ya está registrado');</script>";
+    } else {
+
+      $stmt = $conn->prepare("
         INSERT INTO productos 
         (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ");
 
-    $stmt->bind_param(
-      "ssssdsiiii",
-      $CODIGO_BARRAS,
-      $SKU,
-      $NOMBRE,
-      $DESCRIPCION,
-      $PRECIO,
-      $FECHA_REGISTRO,
-      $LOTE_ID,
-      $MARCA_ID,
-      $CATEGORIA_ID,
-      $PROVEEDOR_ID
-    );
+      $stmt->bind_param(
+        "ssssdsiiii",
+        $CODIGO_BARRAS,
+        $SKU,
+        $NOMBRE,
+        $DESCRIPCION,
+        $PRECIO,
+        $FECHA_REGISTRO,
+        $LOTE_ID,
+        $MARCA_ID,
+        $CATEGORIA_ID,
+        $PROVEEDOR_ID
+      );
 
-    if ($stmt->execute()) {
-      header("Location: index.php");
-      exit();
-    } else {
-      echo "Error al insertar producto: " . $stmt->error;
+      if ($stmt->execute()) {
+        header("Location: index.php");
+        exit();
+      } else {
+        echo "Error al insertar producto: " . $stmt->error;
+      }
     }
-
   } else {
     echo "Faltan datos obligatorios del producto";
   }
@@ -774,13 +785,15 @@ if (isset($_POST['form_usuario'])) {
             </tbody>
           </table>
           <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>" href="?pagina_productos=<?= $pagina_productos - 1 ?>">
+            <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
+              href="?pagina_productos=<?= $pagina_productos - 1 ?>">
               &lt;
             </a>
 
             <span class="fw-bold"><?= $pagina_productos ?></span>
 
-            <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>" href="?pagina_productos=<?= $pagina_productos + 1 ?>">
+            <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>"
+              href="?pagina_productos=<?= $pagina_productos + 1 ?>">
               &gt;
             </a>
           </nav>
@@ -789,48 +802,123 @@ if (isset($_POST['form_usuario'])) {
     </div>
   
     <!-- GESTIÓN DE MOVIMIENTOS -->
+
     <?php if ($rol == 'empleado'): ?>
       <div class="card shadow-sm p-4 mt-4">
         <h4>Gestión de Movimientos</h4>
 
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReporte">
+            Generar reporte
+          </button>
+          <!---INICIO MODAL REPORTES--->
+        <div class="modal fade" id="modalReporte">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
 
-            <thead class="table-dark">
-              <tr>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Usuario</th>
-                <th>Proveedor</th>
-                <th>Almacén</th>
-              </tr>
-            </thead>
+              <div class="modal-header">
+                <h5>Generar Reporte</h5>
+              </div>
 
-            <tbody>
-              <?php foreach ($movimientos as $m): ?>
-                <tr>
-                  <td><?= $m['FECHA_REGISTRO'] ?></td>
+              <div class="modal-body">
 
-                  <td>
-                    <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
-                      <?= $m['MOVIMIENTO'] ?>
-                    </span>
-                  </td>
+                <!-- FILTROS -->
+                  <div class="row">
+                    <div class="col">
+                      <label>Fecha inicio</label>
+                      <input type="date" id="fecha_inicio" class="form-control">
+                    </div>
 
-                  <td><?= $m['PRODUCTO'] ?></td>
-                  <td><?= $m['CANTIDAD'] ?></td>
-                  <td><?= $m['USUARIO'] ?></td>
-                  <td><?= $m['PROVEEDOR'] ?></td>
-                  <td><?= $m['ALMACEN_ID'] ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
+                    <div class="col">
+                      <label>Fecha fin</label>
+                      <input type="date" id="fecha_fin" class="form-control">
+                    </div>
 
-          </table>
-        </div>
+                    <div class="col">
+                      <label>Tipo</label>
+                      <select id="tipo" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="1">Entradas</option>
+                        <option value="2">Salidas</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <br>
+
+                  <button class="btn btn-success" onclick="buscarReporte()">
+                    Buscar
+                  </button>
+
+                  <!-- TABLA -->
+                  <div id="tabla_reporte"></div>
+
+                </div>
+                
+                <button class="btn btn-success">Imprimir</button>
+
+                <button type="button" class="btn ms-2 btn-danger"
+                  style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
+
+              </div>
+            </div>
+          </div>
+          <!----FIN MODAL REPORTES--->
+        <table class="table table-hover align-middle">
+
+          <thead class="table-dark">
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Usuario</th>
+              <th>Proveedor</th>
+              <th>Almacén</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <?php foreach ($movimientos as $m): ?>
+            <tr>
+              <td>
+                <?= $m['ID_MOVIMIENTO'] ?>
+              </td>
+              <td>
+                <?= $m['FECHA_REGISTRO'] ?>
+              </td>
+
+              <td>
+                <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
+                  <?= $m['MOVIMIENTO'] ?>
+                </span>
+              </td>
+
+              <td>
+                <?= $m['PRODUCTO'] ?>
+              </td>
+              <td>
+                <?= $m['CANTIDAD'] ?>
+              </td>
+              <td>
+                <?= $m['USUARIO'] ?>
+              </td>
+              <td>
+                <?= $m['PROVEEDOR'] ?>
+              </td>
+              <td>
+                <?= $m['ALMACEN_ID'] ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+
+        </table>
       </div>
+    </div>
     <?php endif; ?>
   </div>
 
@@ -891,7 +979,7 @@ if (isset($_POST['form_usuario'])) {
                       </button>
 
                       <button class="btn btn-sm btn-danger"
-                        onclick="if(confirm('¿Eliminar producto?')) window.location.href='eliminarProducto.php?id=${p.PRODUCTO_ID}'">
+                        onclick="if(confirm('¿Eliminar producto?')) window.location.href='EliminarProducto.php?id=${p.PRODUCTO_ID}'">
                         <i class="bi bi-trash"></i>
                       </button>
                     </td>
@@ -926,6 +1014,20 @@ if (isset($_POST['form_usuario'])) {
         window.location.href = "eliminar_usuario.php?id=" + id;
       }
     }
+
+    ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
+    function buscarReporte() {
+      let inicio = document.getElementById("fecha_inicio").value;
+      let fin = document.getElementById("fecha_fin").value;
+      let tipo = document.getElementById("tipo").value;
+
+      fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById("tabla_reporte").innerHTML = data;
+        });
+    }
+
   </script>
 
 </body>
