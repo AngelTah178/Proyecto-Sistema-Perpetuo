@@ -822,89 +822,112 @@
                 Generar compra
               </button>
 
-              <!--Modal de registro de stock-->
+              <!-- MODAL REGISTRO DE STOCK -->
               <div class="modal fade" id="modalExistencias" tabindex="-1">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
-                  <div class="modal-content modal-existencias">
+                  <div class="modal-content modal-producto">
+
                     <form method="POST">
                       <input type="hidden" name="form_existencas" value="1">
-                      <h4>Registrar Entrada</h4>
-                      <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
-                      <div class="mb-3">
-                        <label>Proveedor</label>
-                        <select name="PROVEEDOR_ID" id="proveedor" class="form-control" required>
-                          <option value="">Selecciona proveedor</option>
-                          <?php while ($pr = $proveedores->fetch_assoc()): ?>
-                            <option value="<?= $pr['PROVEEDOR_ID'] ?>">
-                              <?= $pr['NOMBRE'] ?>
-                            </option>
-                          <?php endwhile; ?>
-                        </select>
+
+                      <!-- HEADER -->
+                      <div class="modal-header">
+                        <h5 class="modal-title">Registrar entrada de inventario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                       </div>
 
-                      <div class="mb-3">
-                        <label>Producto</label>
-                        <select name="PRODUCTO_ID" id="producto" class="form-control" required disabled>
-                          <option value="">Selecciona primero un proveedor</option>
-                        </select>
+                      <!-- BODY -->
+                      <div class="modal-body">
+
+                        <div class="row">
+
+                          <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Proveedor</label>
+                            <select name="PROVEEDOR_ID" id="proveedor" class="form-control input-pro" required>
+                              <option value="">Selecciona proveedor</option>
+                              <?php while ($pr = $proveedores->fetch_assoc()): ?>
+                                <option value="<?= $pr['PROVEEDOR_ID'] ?>">
+                                  <?= $pr['NOMBRE'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Producto</label>
+                            <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required disabled>
+                              <option value="">Selecciona primero un proveedor</option>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidades</label>
+                            <input type="number" name="UNIDADES" class="form-control input-pro" required>
+                          </div>
+
+                          <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Almacén</label>
+                            <select name="ALMACEN_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona almacén</option>
+                              <?php while ($a = $almacenes->fetch_assoc()): ?>
+                                <option value="<?= $a['ALMACEN_ID'] ?>">
+                                  <?= $a['ALMACEN'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
+                          <!-- UBICACIÓN -->
+                          <div class="col-12">
+                            <hr>
+                            <h6 class="fw-bold">Ubicación</h6>
+                          </div>
+
+                          <div class="col-md-3 mb-3">
+                            <label class="form-label">Pasillo</label>
+                            <input type="text" name="PASILLO" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-md-3 mb-3">
+                            <label class="form-label">Sección</label>
+                            <input type="text" name="SECCION" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-md-3 mb-3">
+                            <label class="form-label">Nivel</label>
+                            <input type="text" name="NIVEL" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-md-3 mb-3">
+                            <label class="form-label">Estante</label>
+                            <input type="text" name="ESTANTE" class="form-control input-pro" required>
+                          </div>
+
+                          <input type="hidden" name="crear_ubicacion" value="1">
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
+                          </div>
+
+                        </div>
+
                       </div>
 
-
-                      <div class="mb-3">
-                        <label>Unidades</label>
-                        <input type="number" name="UNIDADES" class="form-control" required>
-                      </div>
-
-                      <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
-                      <div class="mb-3">
-                        <label>Almacén</label>
-                        <select name="ALMACEN_ID" class="form-control" required>
-                          <option value="">Selecciona almacén</option>
-                          <?php while ($a = $almacenes->fetch_assoc()): ?>
-                            <option value="<?= $a['ALMACEN_ID'] ?>">
-                              <?= $a['ALMACEN'] ?>
-                            </option>
-                          <?php endwhile; ?>
-                        </select>
-                      </div>
-
-                      <!----INICIO UBICACIONES---->
-                      <hr>
-                      <h5>Registrar nueva ubicación</h5>
-
-                      <div class="mb-2">
-                        <input type="text" name="PASILLO" class="form-control" placeholder="Pasillo" required>
-                      </div>
-
-                      <div class="mb-2">
-                        <input type="text" name="SECCION" class="form-control" placeholder="Sección" required>
-                      </div>
-
-                      <div class="mb-2">
-                        <input type="text" name="NIVEL" class="form-control" placeholder="Nivel" required>
-                      </div>
-
-                      <div class="mb-2">
-                        <input type="text" name="ESTANTE" class="form-control" placeholder="Estante" required>
-                      </div>
-
-                      <input type="hidden" name="crear_ubicacion" value="1">
-                      <!----FIN UBICACIONES---->
-
-                      <div class="mb-3">
-                        <label>Fecha</label>
-                        <input type="date" name="FECHA_REGISTRO" class="form-control" required>
-                      </div>
-
+                      <!-- FOOTER -->
                       <div class="modal-footer">
-                        <button type="submit" class="btn ms-2 btn-success" style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                        <button type="submit" class="btn btn-success">
                           Guardar
                         </button>
-                        <button type="button" class="btn ms-2 btn-danger" style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
                           Cancelar
                         </button>
                       </div>
+
                     </form>
+
                   </div>
                 </div>
               </div>

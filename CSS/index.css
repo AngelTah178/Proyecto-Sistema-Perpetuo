@@ -108,6 +108,15 @@ h2, h3, h4 {
   background-color: #fff;
 }
 
+.modal-producto h6 {
+  color: #0d2b3e;
+  margin-bottom: 10px;
+}
+
+.modal-producto hr {
+  border-top: 2px solid #e0e0e0;
+}
+
 .input-pro {
   border-radius: 10px;
   border: 2px solid #dcdcdc;
