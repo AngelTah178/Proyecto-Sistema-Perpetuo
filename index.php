@@ -651,7 +651,7 @@
               <tbody id="tbodyProductos">
                 <?php $contador = $offset_productos + 1; ?>
                 <?php foreach ($productos as $p): ?>
-                  <tr>
+                  <tr id="fila-producto-<?= $p['PRODUCTO_ID']; ?>">
                     <td>
                       <?= $contador++; ?>
                     </td>
@@ -690,7 +690,6 @@
                       <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <!-- MODAL EDITAR PRODUCTO -->
                       <div class="modal fade" id="modalEditarProducto" tabindex="-1">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                           <div class="modal-content">
@@ -738,8 +737,8 @@
                                   <div class="col-md-6 mb-3">
                                     <label>Proveedor</label>
                                     <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
-                                      <?php foreach ($proveedores as $p): ?>
-                                        <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                                      <?php foreach ($proveedores as $p_prov): ?>
+                                        <option value="<?= $p_prov['PROVEEDOR_ID'] ?>"><?= $p_prov['NOMBRE'] ?></option>
                                       <?php endforeach; ?>
                                     </select>
                                   </div>
@@ -767,7 +766,7 @@
                         </div>
                       </div>
 
-                      <button class="btn btn-sm btn-danger" onclick="eliminarProducto(<?= $u['PRODUCTO_ID']; ?>)">
+                      <button class="btn btn-sm btn-danger" onclick="eliminarProducto(<?= $p['PRODUCTO_ID']; ?>)">
                         <i class="bi bi-trash"></i>
                       </button>
 
@@ -775,6 +774,7 @@
                   </tr>
                 <?php endforeach; ?>
               </tbody>
+              
             </table>
             <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
               <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
@@ -983,10 +983,45 @@
         modal.show();
       }
 
-      function eliminarUsuario(id) {
-        if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-          window.location.href = "eliminar_usuario.php?id=" + id;
-        }
+      function eliminarProducto(id) {
+          // 1. Pedimos confirmación al usuario
+          if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+              
+              // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
+              let formData = new FormData();
+              formData.append('id', id);
+
+              // 3. Hacemos la petición al archivo correcto
+              fetch('EliminarProducto.php', { 
+                  method: 'POST',
+                  body: formData
+              })
+              .then(response => {
+                  // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
+                  if (!response.ok) {
+                      throw new Error("Error en la respuesta del servidor");
+                  }
+                  // Convertimos la respuesta a JSON
+                  return response.json();
+              })
+              .then(data => {
+                  if (data.success) {
+                      // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
+                      let fila = document.getElementById('fila-producto-' + id);
+                      if (fila) {
+                          fila.remove();
+                      }
+                  } else {
+                      // El PHP devolvió success = false (ej. error de llaves foráneas)
+                      alert("Error al eliminar el producto: " + data.message);
+                  }
+              })
+              .catch(error => {
+                  // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
+                  console.error("Detalle del error:", error);
+                  alert("Hubo un problema de conexión al intentar eliminar.");
+              });
+          }
       }
 
       ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
