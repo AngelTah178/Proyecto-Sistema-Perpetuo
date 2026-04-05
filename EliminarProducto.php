@@ -1,30 +1,32 @@
 <?php
-
 session_start();
 include "conexion.php";
 
+// Validar que el usuario tenga sesión
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-    header("Location: index.php");
+    echo json_encode(["success" => false, "message" => "Acceso no autorizado"]);
     exit;
 }
 
-$rol = $_SESSION['ROL'] ?? '';
+// Validar que hayamos recibido un ID por POST
+if (isset($_POST['id'])) {
+    $id = intval($_POST['id']); // intval por seguridad
 
-if ($rol != "admin" && $rol != "empleado") {
-    echo "Acceso denegado";
-    exit();
-}
+    // Preparar la consulta para evitar inyecciones SQL
+    $stmt = $conn->prepare("DELETE FROM productos WHERE PRODUCTO_ID = ?");
+    $stmt->bind_param("i", $id);
 
-$producto_id = (int) $_GET['PRODUCTO_ID'];
+    if ($stmt->execute()) {
+        // Si se eliminó correctamente, enviamos respuesta exitosa
+        echo json_encode(["success" => true]);
+    } else {
+        // Si hubo error (ej. restricciones de llaves foráneas), devolvemos el error
+        echo json_encode(["success" => false, "message" => $stmt->error]);
+    }
 
-$stmt = $conn->prepare("DELETE FROM productos WHERE PRODUCTO_ID = ?");
-$stmt->bind_param("i", $producto_id);
-
-if ($stmt->execute()) {
-    header("Location: inventario.php");
-    exit();
+    $stmt->close();
 } else {
-    echo "Error al eliminar: " . $stmt->error;
+    echo json_encode(["success" => false, "message" => "No se proporcionó un ID válido"]);
 }
 
 $conn->close();
