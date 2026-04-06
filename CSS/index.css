@@ -1,6 +1,7 @@
 body {
   background: linear-gradient(135deg, #eef2f7, #dfe9f3);
   padding-top: 80px;
+  padding-bottom: 60px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -28,6 +29,18 @@ h2, h3, h4 {
 
 .dashboard-card:hover {
   transform: translateY(-5px);
+}
+
+.btn {
+  border: 1px solid transparent;
+}
+
+.btn:hover {
+  border: 1px solid transparent; /* evita que crezca */
+}
+
+nav {
+  overflow: hidden;
 }
 
 .btn-custom {

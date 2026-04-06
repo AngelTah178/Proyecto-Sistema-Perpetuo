@@ -184,26 +184,49 @@
 
     $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
     $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+
+    // PAGINACIÓN STOCK
+    $registros_por_pagina_stock = 10;
+
+    $pagina_stock = isset($_GET['pagina_stock']) ? (int) $_GET['pagina_stock'] : 1;
+    if ($pagina_stock < 1) $pagina_stock = 1;
+
+    $offset_stock = ($pagina_stock - 1) * $registros_por_pagina_stock;
+
+    $total_stock = $conn->query("SELECT COUNT(*) as total FROM stock")->fetch_assoc()['total'];
+    $total_paginas_stock = ceil($total_stock / $registros_por_pagina_stock);
+
+    // PAGINACIÓN MOVIMIENTOS
+    $registros_por_pagina_mov = 10;
+
+    $pagina_mov = isset($_GET['pagina_mov']) ? (int)$_GET['pagina_mov'] : 1;
+    if ($pagina_mov < 1) $pagina_mov = 1;
+
+    $offset_mov = ($pagina_mov - 1) * $registros_por_pagina_mov;
+
+    $total_mov = $conn->query("SELECT COUNT(*) as total FROM movimientos")->fetch_assoc()['total'];
+    $total_paginas_mov = ceil($total_mov / $registros_por_pagina_mov);
   // ================== FIN PAGINACIÓN ==================
 
-  // ================== MOVIMIENTOS ==================
-  $movimientos = $conn->query("
-    SELECT 
-      m.ID_MOVIMIENTO,
-      m.FECHA_REGISTRO,
-      m.CANTIDAD,
-      tm.MOVIMIENTO,
-      u.NOMBRE AS USUARIO,
-      p.NOMBRE AS PRODUCTO,
-      pr.NOMBRE AS PROVEEDOR,
-      m.ALMACEN_ID
-    FROM movimientos m
-    LEFT JOIN tipo_movimientos tm ON m.TIPO_ID = tm.TIPO_ID
-    LEFT JOIN usuarios u ON m.ID_USUARIO = u.ID_USUARIO
-    LEFT JOIN productos p ON m.PRODUCTO_ID = p.PRODUCTO_ID
-    LEFT JOIN proveedores pr ON m.PROVEEDOR_ID = pr.PROVEEDOR_ID
-    ORDER BY m.ID_MOVIMIENTO DESC
-  ");
+  // ================== BUSCADOR DE STOCK ==================
+  if (isset($_GET['ajax']) && $_GET['ajax'] == 'stock') {
+
+    $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
+
+    $sql = "TU MISMA QUERY DE STOCK";
+
+    $result = $conn->query($sql);
+
+    $data = [];
+
+    while ($row = $result->fetch_assoc()) {
+      $data[] = $row;
+    }
+
+    echo json_encode($data);
+    exit;
+  }
+
 
   // ================== CONSULTAS ==================
     $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
@@ -245,6 +268,27 @@
       LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
       INNER JOIN almacenes a ON s.ALMACEN_ID = a.ALMACEN_ID
       INNER JOIN ubicaciones u ON s.UBICACION_ID = u.UBICACION_ID
+
+      LIMIT $offset_stock, $registros_por_pagina_stock
+    ");
+
+    $movimientos = $conn->query("
+      SELECT 
+        m.ID_MOVIMIENTO,
+        m.FECHA_REGISTRO,
+        m.CANTIDAD,
+        tm.MOVIMIENTO,
+        u.NOMBRE AS USUARIO,
+        p.NOMBRE AS PRODUCTO,
+        pr.NOMBRE AS PROVEEDOR,
+        m.ALMACEN_ID
+      FROM movimientos m
+      LEFT JOIN tipo_movimientos tm ON m.TIPO_ID = tm.TIPO_ID
+      LEFT JOIN usuarios u ON m.ID_USUARIO = u.ID_USUARIO
+      LEFT JOIN productos p ON m.PRODUCTO_ID = p.PRODUCTO_ID
+      LEFT JOIN proveedores pr ON m.PROVEEDOR_ID = pr.PROVEEDOR_ID
+      ORDER BY m.ID_MOVIMIENTO DESC
+      LIMIT $offset_mov, $registros_por_pagina_mov
     ");
   // ================== FIN DE CONSULTAS ==================
 
@@ -434,7 +478,7 @@
           </div>
 
           <!-- BUSCADOR -->
-          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar usuario...">
+          <input type="text" id="buscadorUsuario" class="form-control mb-3" placeholder="Buscar usuario...">
 
           <!-- TABLA USUARIOS-->
           <div class="table-responsive">
@@ -639,7 +683,7 @@
           </div>
 
           <!-- BUSCADOR -->
-          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
+          <input type="search" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
           <div id="resultado"></div>
 
           <!--TABLA PRODUCTOS -->
@@ -667,39 +711,17 @@
                 <?php $contador = $offset_productos + 1; ?>
                 <?php foreach ($productos as $p): ?>
                   <tr id="fila-producto-<?= $p['PRODUCTO_ID']; ?>">
-                    <td>
-                      <?= $contador++; ?>
-                    </td>
-                    <td>
-                      <?= $p['CODIGO_BARRAS']; ?>
-                    </td>
-                    <td>
-                      <?= $p['SKU']; ?>
-                    </td>
-                    <td>
-                      <?= $p['NOMBRE']; ?>
-                    </td>
-                    <td>
-                      <?= $p['DESCRIPCION']; ?>
-                    </td>
-                    <td>
-                      <?= $p['PRECIO']; ?>
-                    </td>
-                    <td>
-                      <?= $p['FECHA_REGISTRO']; ?>
-                    </td>
-                    <td>
-                      <?= $p['LOTE_ID']; ?>
-                    </td>
-                    <td>
-                      <?= $p['MARCA']; ?>
-                    </td>
-                    <td>
-                      <?= $p['CATEGORIA']; ?>
-                    </td>
-                    <td>
-                      <?= $p['PROVEEDOR']; ?>
-                    </td>
+                    <td><?= $contador++; ?></td>
+                    <td><?= $p['CODIGO_BARRAS']; ?></td>
+                    <td><?= $p['SKU']; ?></td>
+                    <td><?= $p['NOMBRE']; ?></td>
+                    <td><?= $p['DESCRIPCION']; ?></td>
+                    <td><?= $p['PRECIO']; ?></td>
+                    <td><?= $p['FECHA_REGISTRO']; ?></td>
+                    <td><?= $p['LOTE_ID']; ?></td>
+                    <td><?= $p['MARCA']; ?></td>
+                    <td><?= $p['CATEGORIA']; ?></td>
+                    <td><?= $p['PROVEEDOR']; ?></td>
 
                     <td class="text-center">
                       <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
@@ -935,8 +957,7 @@
           </div>
 
           <!-- BUSCADOR -->
-          <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
-          <div id="resultado"></div>
+          <input type="search" id="buscadorStock" class="form-control mb-3" placeholder="Buscar en sotck...">
 
           <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -969,10 +990,10 @@
 
                     <td>
                       <span class="badge bg-info text-dark">
-                        P<?= $s['PASILLO']; ?> -
-                        E<?= $s['ESTANTE']; ?> -
-                        N<?= $s['NIVEL']; ?> -
-                        S<?= $s['SECCION']; ?>
+                        P-<?= $s['PASILLO']; ?>  
+                        E-<?= $s['ESTANTE']; ?>  
+                        N-<?= $s['NIVEL']; ?>  
+                        S-<?= $s['SECCION']; ?> 
                       </span>
                     </td>
 
@@ -981,6 +1002,19 @@
               </tbody>
 
             </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_stock <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_stock=<?= $pagina_stock - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina_stock ?></span>
+
+              <a class="btn btn-light <?= ($pagina_stock >= $total_paginas_stock) ? 'disabled' : '' ?>"
+                href="?pagina_stock=<?= $pagina_stock + 1 ?>">
+                &gt;
+              </a>
+            </nav>
           </div>
         </div>
       <?php endif; ?>
@@ -995,7 +1029,7 @@
               Generar reporte
             </button>
 
-            <!---INICIO MODAL REPORTES--->
+            <!--- MODAL REPORTES--->
             <div class="modal fade" id="modalReporte">
               <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -1082,6 +1116,19 @@
               </tbody>
 
             </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_mov <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_mov=<?= $pagina_mov - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina_mov ?></span>
+
+              <a class="btn btn-light <?= ($pagina_mov >= $total_paginas_mov) ? 'disabled' : '' ?>"
+                href="?pagina_mov=<?= $pagina_mov + 1 ?>">
+                &gt;
+              </a>
+            </nav>
           </div>
         </div>
       <?php endif; ?>
@@ -1153,6 +1200,60 @@
 
       });
 
+      //Buscador de stock
+      const buscadorStock = document.getElementById("buscadorStock");
+      if (buscadorStock) {
+        buscadorStock.addEventListener("keyup", function () {
+
+          let valor = this.value.trim();
+
+          fetch("buscarStock.php?q=" + valor)
+            .then(res => res.json())
+            .then(data => {
+
+              let html = "";
+
+              if (data.length === 0) {
+                html = `
+                  <tr>
+                    <td colspan="8" class="text-center text-danger">
+                      No se encontraron resultados
+                    </td>
+                  </tr>
+                `;
+              } else {
+
+                data.forEach((s, index) => {
+                  html += `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${s.CODIGO_BARRAS}</td>
+                      <td>${s.NOMBRE}</td>
+                      <td>${s.MARCA}</td>
+                      <td>${s.UNIDADES}</td>
+                      <td>${s.LOTE_ID}</td>
+                      <td>${s.ALMACEN}</td>
+                      <td>
+                        <span class="badge bg-info text-dark">
+                          P${s.PASILLO} -
+                          E${s.ESTANTE} -
+                          N${s.NIVEL} -
+                          S${s.SECCION}
+                        </span>
+                      </td>
+                    </tr>
+                  `;
+                });
+
+              }
+
+              document.getElementById("tbodyStock").innerHTML = html;
+
+            });
+
+        });
+      }
+
       function abrirModalEditar(producto) {
         document.getElementById("edit_id").value = producto.PRODUCTO_ID;
         document.getElementById("edit_nombre").value = producto.NOMBRE;
@@ -1168,44 +1269,44 @@
       }
 
       function eliminarProducto(id) {
-          // 1. Pedimos confirmación al usuario
-          if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-              
-              // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
-              let formData = new FormData();
-              formData.append('id', id);
+        // 1. Pedimos confirmación al usuario
+        if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+            
+            // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
+            let formData = new FormData();
+            formData.append('id', id);
 
-              // 3. Hacemos la petición al archivo correcto
-              fetch('EliminarProducto.php', { 
-                  method: 'POST',
-                  body: formData
-              })
-              .then(response => {
-                  // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
-                  if (!response.ok) {
-                      throw new Error("Error en la respuesta del servidor");
-                  }
-                  // Convertimos la respuesta a JSON
-                  return response.json();
-              })
-              .then(data => {
-                  if (data.success) {
-                      // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
-                      let fila = document.getElementById('fila-producto-' + id);
-                      if (fila) {
-                          fila.remove();
-                      }
-                  } else {
-                      // El PHP devolvió success = false (ej. error de llaves foráneas)
-                      alert("Error al eliminar el producto: " + data.message);
-                  }
-              })
-              .catch(error => {
-                  // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
-                  console.error("Detalle del error:", error);
-                  alert("Hubo un problema de conexión al intentar eliminar.");
-              });
-          }
+            // 3. Hacemos la petición al archivo correcto
+            fetch('EliminarProducto.php', { 
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
+                if (!response.ok) {
+                    throw new Error("Error en la respuesta del servidor");
+                }
+                // Convertimos la respuesta a JSON
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
+                    let fila = document.getElementById('fila-producto-' + id);
+                    if (fila) {
+                        fila.remove();
+                    }
+                } else {
+                    // El PHP devolvió success = false (ej. error de llaves foráneas)
+                    alert("Error al eliminar el producto: " + data.message);
+                }
+            })
+            .catch(error => {
+                // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
+                console.error("Detalle del error:", error);
+                alert("Hubo un problema de conexión al intentar eliminar.");
+            });
+        }
       }
 
       ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
