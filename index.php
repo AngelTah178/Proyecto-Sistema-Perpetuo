@@ -570,7 +570,7 @@
               Registrar producto
             </button>
             
-            <!--MODAL REGISTRO DE USUARIO -->
+            <!--MODAL REGISTRO DE PRODUCTO -->
             <div class="modal fade" id="modalProducto" tabindex="-1">
               <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content modal-producto">
