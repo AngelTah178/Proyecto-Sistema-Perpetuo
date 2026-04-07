@@ -1083,7 +1083,7 @@ $movimientos = $conn->query("
 
                 </div>
 
-                <button class="btn btn-success">Imprimir</button>
+                <button class="btn btn-success" onclick="generarPDF()">Imprimir</button>
 
                 <button type="button" class="btn ms-2 btn-danger"
                   style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
@@ -1357,6 +1357,15 @@ $movimientos = $conn->query("
           producto.disabled = false;
         });
     });
+
+    ///esto imprme el pdf
+    function generarPDF() {
+      let inicio = document.getElementById("fecha_inicio").value;
+      let fin = document.getElementById("fecha_fin").value;
+      let tipo = document.getElementById("tipo").value;
+
+      window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
+    }
   </script>
 
 </body>
