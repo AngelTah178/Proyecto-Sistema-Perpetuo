@@ -477,7 +477,7 @@
           </div>
 
           <!-- BUSCADOR -->
-          <input type="text" id="buscadorUsuario" class="form-control mb-3" placeholder="Buscar usuario...">
+          <input type="search" id="buscadorUsuario" class="form-control mb-3" placeholder="Buscar usuario...">
 
           <!-- TABLA USUARIOS-->
           <div class="table-responsive">
@@ -496,7 +496,7 @@
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody id="tbodyUsuarios">
                 <?php $contador = $offset + 1; ?>
                 <?php foreach ($usuarios as $u): ?>
                   <tr>
@@ -1107,61 +1107,101 @@
     <!-- SCRIPTS -->
     <script>
       const input = document.getElementById("buscador");
-      input.addEventListener("keyup", function () {
+      if (input) {
+        input.addEventListener("keyup", function () {
 
-        let valor = input.value.trim();
+          let valor = input.value.trim();
 
-        if (valor === "") {
-          location.reload(); // vuelve a la tabla normal
-          return;
-        }
+          if (valor === "") {
+            location.reload();
+            return;
+          }
 
-        fetch("buscarGeneral.php?q=" + valor)
-        .then(res => res.json())
-        .then(data => {
+          fetch("buscarGeneral.php?q=" + valor)
+          .then(res => res.json())
+          .then(data => {
 
-          let html = "";
+            let html = "";
 
-          if (data.length === 0) {
-            html = `
-              <tr>
-                <td colspan="12" class="text-center text-danger">
-                  No se encontraron resultados
-                </td>
-              </tr>
-            `;
-          } else {
-
-            data.forEach((p, index) => {
-              html += `
+            if (data.length === 0) {
+              html = `
                 <tr>
-                  <td>${index + 1}</td>
-                  <td>${p.CODIGO_BARRAS}</td>
-                  <td>${p.SKU}</td>
-                  <td>${p.NOMBRE}</td>
-                  <td>${p.DESCRIPCION}</td>
-                  <td>${p.PRECIO}</td>
-                  <td>${p.FECHA_REGISTRO}</td>
-                  <td>${p.LOTE_ID}</td>
-                  <td>${p.MARCA}</td>
-                  <td>${p.CATEGORIA}</td>
-                  <td>${p.PROVEEDOR}</td>
-
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-warning" onclick="window.location.href='editarProducto.php?id=${p.PRODUCTO_ID}'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger" onclick="if(confirm('¿Eliminar producto?')) window.location.href='EliminarProducto.php?id=${p.PRODUCTO_ID}'">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                  <td colspan="12" class="text-center text-danger">
+                    No se encontraron resultados
                   </td>
                 </tr>
               `;
-            });
-          }
-          document.getElementById("tbodyProductos").innerHTML = html;
+            } else {
+              data.forEach((p, index) => {
+                html += `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${p.CODIGO_BARRAS}</td>
+                    <td>${p.SKU}</td>
+                    <td>${p.NOMBRE}</td>
+                    <td>${p.DESCRIPCION}</td>
+                    <td>${p.PRECIO}</td>
+                    <td>${p.FECHA_REGISTRO}</td>
+                    <td>${p.LOTE_ID}</td>
+                    <td>${p.MARCA}</td>
+                    <td>${p.CATEGORIA}</td>
+                    <td>${p.PROVEEDOR}</td>
+                  </tr>
+                `;
+              });
+            }
+
+            document.getElementById("tbodyProductos").innerHTML = html;
+          });
+
         });
+      }
+
+      //Buscador de Usuarios
+      document.addEventListener("DOMContentLoaded", function () {
+
+        const buscadorUsuario = document.getElementById("buscadorUsuario");
+
+        if (buscadorUsuario) {
+          buscadorUsuario.addEventListener("keyup", function () {
+
+            let valor = this.value.trim();
+
+            if (valor === "") {
+              location.reload();
+              return;
+            }
+
+            fetch("buscarUsuario.php?q=" + encodeURIComponent(valor))
+              .then(res => res.json())
+              .then(data => {
+
+                let html = "";
+
+                if (data.length === 0) {
+                  html = `<tr><td colspan="8">No hay usuarios</td></tr>`;
+                } else {
+                  data.forEach((u, index) => {
+                    html += `
+                      <tr>
+                        <td>${index + 1}</td>
+                        <td>${u.NOMBRE}</td>
+                        <td>${u.APELLIDO_P}</td>
+                        <td>${u.APELLIDO_M}</td>
+                        <td>${u.CORREO}</td>
+                        <td>${u.ROL}</td>
+                        <td>${u.ESTADO}</td>
+                      </tr>
+                    `;
+                  });
+                }
+
+                document.getElementById("tbodyUsuarios").innerHTML = html;
+              });
+
+          });
+        }
+
       });
 
       //Buscador de stock
@@ -1286,25 +1326,27 @@
       const proveedor = document.getElementById("proveedor");
       const producto = document.getElementById("producto");
 
-      proveedor.addEventListener("change", function () {
-        let proveedorId = this.value;
+      if (proveedor && producto) {
+        proveedor.addEventListener("change", function () {
 
-        // Reset
-        producto.innerHTML = '<option value="">Cargando...</option>';
-        producto.disabled = true;
+          let proveedorId = this.value;
 
-        if (proveedorId === "") {
-          producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
-          return;
-        }
+          producto.innerHTML = '<option value="">Cargando...</option>';
+          producto.disabled = true;
 
-        fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
-        .then(response => response.text())
-        .then(data => {
-          producto.innerHTML = data;
-          producto.disabled = false;
+          if (proveedorId === "") {
+            producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
+            return;
+          }
+
+          fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
+          .then(response => response.text())
+          .then(data => {
+            producto.innerHTML = data;
+            producto.disabled = false;
+          });
         });
-      });
+      }
 
       ///esto imprme el pdf
       function generarPDF() {
