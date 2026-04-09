@@ -1,7 +1,14 @@
 <?php
   include "conexion.php";
 
+  header('Content-Type: application/json');
+
   $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
+
+  if ($q == "") {
+    echo json_encode([]);
+    exit;
+  }
 
   $sql = "
   SELECT 
@@ -22,12 +29,19 @@
   INNER JOIN almacenes a ON s.ALMACEN_ID = a.ALMACEN_ID
   INNER JOIN ubicaciones u ON s.UBICACION_ID = u.UBICACION_ID
   WHERE 
-    p.NOMBRE LIKE '%$q%' OR
-    p.CODIGO_BARRAS LIKE '%$q%' OR
-    m.NOMBRE LIKE '%$q%'
+  p.NOMBRE LIKE '%$q%' OR
+  p.CODIGO_BARRAS LIKE '%$q%' OR
+  m.NOMBRE LIKE '%$q%'
   ";
 
   $result = $conn->query($sql);
+
+  if (!$result) {
+    echo json_encode([
+      "error" => $conn->error
+    ]);
+    exit;
+  }
 
   $data = [];
 

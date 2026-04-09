@@ -4,10 +4,12 @@
 
   include "Stock.php";
 
-  try {
-    guardarStock($conn);
-  } catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+      guardarStock($conn);
+    } catch (Exception $e) {
+      echo "Error: " . $e->getMessage();
+    }
   }
 
 
@@ -27,11 +29,12 @@
     $NOMBRE = $_POST["NOMBRE"] ?? null;
     $DESCRIPCION = $_POST["DESCRIPCION"] ?? null;
     $PRECIO = $_POST["PRECIO"] ?? 0;
-    $FECHA_REGISTRO = $_POST["FECHA_REGISTRO"] ?? null;
     $LOTE_ID = $_POST["LOTE_ID"] ?? null;
     $MARCA_ID = $_POST["MARCA_ID"] ?? null;
     $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
-    $PROVEEDOR_ID = $_POST["PRO VEEDOR_ID"] ?? null;
+    $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
+    date_default_timezone_set("America/Mexico_City");
+    $FECHA_REGISTRO = date("Y-m-d H:i:s");
 
     // Validación básica
     if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
@@ -221,9 +224,38 @@
   // ================== BUSCADOR DE STOCK ==================
   if (isset($_GET['ajax']) && $_GET['ajax'] == 'stock') {
 
+    header('Content-Type: application/json');
+
     $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
 
-    $sql = "TU MISMA QUERY DE STOCK";
+    if ($q == "") {
+      echo json_encode([]);
+      exit;
+    }
+
+    $sql = "
+      SELECT 
+        p.NOMBRE,
+        p.CODIGO_BARRAS,
+        m.NOMBRE AS MARCA,
+        l.LOTE_ID,
+        a.ALMACEN,
+        u.PASILLO,
+        u.ESTANTE,
+        u.NIVEL,
+        u.SECCION,
+        s.UNIDADES
+      FROM stock s
+      INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
+      LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
+      LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
+      INNER JOIN almacenes a ON s.ALMACEN_ID = a.ALMACEN_ID
+      INNER JOIN ubicaciones u ON s.UBICACION_ID = u.UBICACION_ID
+      WHERE 
+      p.NOMBRE LIKE '%$q%' OR
+      p.CODIGO_BARRAS LIKE '%$q%' OR
+      m.NOMBRE LIKE '%$q%'
+    ";
 
     $result = $conn->query($sql);
 
@@ -236,7 +268,6 @@
     echo json_encode($data);
     exit;
   }
-
 
   // ================== CONSULTAS ==================
     $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
@@ -389,6 +420,7 @@
 
       <!-- TABLAS DE USUARIOS / PRODUCTOS -->
       <div class="card shadow-sm p-4">
+        <!-- GESTIÓN DE USUARIOS -->
         <?php if ($rol == 'admin'): ?>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Usuarios</h4>
@@ -592,17 +624,12 @@
 
                         <div class="col-md-6 mb-3">
                           <label class="form-label">Precio</label>
-                          <input type="number" name="PRECIO" class="form-control input-pro" required>
+                          <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
                         </div>
 
                         <div class="col-12 mb-3">
                           <label class="form-label">Descripción</label>
                           <input type="text" name="DESCRIPCION" class="form-control input-pro">
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Fecha de registro</label>
-                          <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -635,7 +662,7 @@
                           </select>
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
                           <label class="form-label">Proveedor</label>
                           <select name="PROVEEDOR_ID" class="form-control input-pro" required>
                             <option value="">Selecciona</option>
@@ -818,7 +845,7 @@
               </button>
 
               <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalExistencias">
-                Generar compra
+                Generar stock
               </button>
 
               <!-- MODAL REGISTRO DE STOCK -->
@@ -944,7 +971,7 @@
               </thead>
 
               <tbody id="tbodyStock">
-                <?php $contador = 1; ?>
+                <?php $contador = $offset_stock + 1; ?>
                 <?php while ($s = $stock->fetch_assoc()): ?>
                   <tr>
                     <td><?= $contador++; ?></td>
@@ -1211,9 +1238,15 @@
 
           let valor = this.value.trim();
 
-          fetch("buscarStock.php?q=" + valor)
+          if (valor === "") {
+            location.reload();
+            return;
+          }
+
+          fetch("buscarStock.php?q=" + encodeURIComponent(valor))
           .then(res => res.json())
           .then(data => {
+            console.log(data);        
 
             let html = "";
 
@@ -1247,10 +1280,10 @@
                   </tr>
                 `;
               });
-
             }
             document.getElementById("tbodyStock").innerHTML = html;
-          });
+          })
+          .catch(err => console.error("Error:", err));
         });
       }
 
