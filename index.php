@@ -633,8 +633,18 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
+                          <label class="form-label">Categoría</label>
+                          <select name="CATEGORIA_ID" id="categoria" class="form-control input-pro" required>
+                            <option value="">Selecciona</option>
+                            <?php while ($c = $categorias->fetch_assoc()): ?>
+                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                            <?php endwhile; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
                           <label class="form-label">Lote</label>
-                          <select name="LOTE_ID" class="form-control input-pro" required>
+                          <select name="LOTE_ID" id="lote" class="form-control input-pro" required>
                             <option value="">Selecciona</option>
                             <?php while ($l = $lotes->fetch_assoc()): ?>
                               <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
@@ -652,15 +662,7 @@
                           </select>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Categoría</label>
-                          <select name="CATEGORIA_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($c = $categorias->fetch_assoc()): ?>
-                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
+                        
 
                         <div class="col-md-6 mb-3">
                           <label class="form-label">Proveedor</label>
@@ -1183,6 +1185,21 @@
 
         });
       }
+
+      //Lote de producto ubicado por categoria 
+      document.getElementById('categoria').addEventListener('change', function() {
+        let categoria_id = this.value;
+
+        fetch('obtener_lotes.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'categoria_id=' + categoria_id
+        })
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('lote').innerHTML = data;
+        });
+      });
 
       //Buscador de Usuarios
       document.addEventListener("DOMContentLoaded", function () {
