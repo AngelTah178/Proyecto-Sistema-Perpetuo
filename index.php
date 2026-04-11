@@ -31,6 +31,7 @@
     $PRECIO = $_POST["PRECIO"] ?? 0;
     $LOTE_ID = $_POST["LOTE_ID"] ?? null;
     $MARCA_ID = $_POST["MARCA_ID"] ?? null;
+    $nuevaMarca = $_POST['nuevaMarca'] ?? '';
     $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
     $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
     date_default_timezone_set("America/Mexico_City");
@@ -48,6 +49,36 @@
       if ($resultado->num_rows > 0) {
         echo "<script>alert('Este código de barras ya está registrado');</script>";
       } else {
+
+        // ================== VALIDAR / CREAR MARCA ==================
+        $nuevaMarca = $_POST['nuevaMarca'] ?? '';
+        if ($MARCA_ID === "nueva") {
+
+          if (!empty($nuevaMarca)) {
+
+            // Buscar si ya existe
+            $checkMarca = $conn->prepare("SELECT MARCA_ID FROM marcas WHERE NOMBRE = ?");
+            $checkMarca->bind_param("s", $nuevaMarca);
+            $checkMarca->execute();
+            $resMarca = $checkMarca->get_result();
+
+            if ($resMarca->num_rows > 0) {
+              $MARCA_ID = $resMarca->fetch_assoc()['MARCA_ID'];
+            } else {
+              $insertMarca = $conn->prepare("INSERT INTO marcas (NOMBRE, FECHA_REGISTRO) VALUES (?, NOW())");
+              $insertMarca->bind_param("s", $nuevaMarca);
+
+              if (!$insertMarca->execute()) {
+                die("Error al insertar marca: " . $insertMarca->error);
+              }
+
+              $MARCA_ID = $conn->insert_id;
+            }
+
+          } else {
+            die("Debes escribir el nombre de la nueva marca");
+          }
+        }
 
         $stmt = $conn->prepare("
           INSERT INTO productos 
@@ -78,6 +109,38 @@
       }
     } else {
       echo "Faltan datos obligatorios del producto";
+    }
+  }
+
+  // ================== INSERTAR PROVEEDOR ==================
+  if (isset($_POST['form_proveedor'])) {
+
+    $nombre = $_POST['NOMBRE'] ?? '';
+    $telefono = $_POST['TELEFONO'] ?? '';
+    $correo = $_POST['CORREO'] ?? '';
+    $estado = $_POST['ESTADO'] ?? 'activo';
+
+    if (!empty($nombre)) {
+
+      $stmt = $conn->prepare("
+        INSERT INTO proveedores (NOMBRE, TELEFONO, CORREO, ESTADO, FECHA_REGISTRO)
+        VALUES (?, ?, ?, ?, NOW())
+      ");
+
+      $stmt->bind_param("ssss", $nombre, $telefono, $correo, $estado);
+
+      if ($stmt->execute()) {
+        echo "<script>
+          alert('Proveedor registrado correctamente');
+          window.location='index.php';
+        </script>";
+        exit();
+      } else {
+        echo "Error al insertar proveedor: " . $stmt->error;
+      }
+
+    } else {
+      echo "El nombre es obligatorio";
     }
   }
 
@@ -585,110 +648,124 @@
         <?php if ($rol != 'admin'): ?>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Productos</h4>
+            <div class="d-flex gap-2">
 
-            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-              Registrar producto
-            </button>
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProveedor">
+                Registrar Proveedor
+              </button>
 
-            <!--MODAL REGISTRO DE PRODUCTO -->
-            <div class="modal fade" id="modalProducto" tabindex="-1">
-              <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content modal-producto">
-                  <form method="POST">
-                    <input type="hidden" name="form_producto" value="1">
-                    <div class="modal-header">
-                      <h5 class="modal-title">
-                        Agregar producto
-                      </h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
+              <?php include "modalProveedor.php"; ?>
 
-                    <div class="modal-body">
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+                Registrar producto
+              </button>
 
-                      <div class="row">
+              <!--MODAL REGISTRO DE PRODUCTO -->
+              <div class="modal fade" id="modalProducto" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content modal-producto">
+                    <form method="POST">
+                      <input type="hidden" name="form_producto" value="1">
+                      <div class="modal-header">
+                        <h5 class="modal-title">
+                          Agregar producto
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Código de barras</label>
-                          <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
-                        </div>
+                      <div class="modal-body">
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">SKU</label>
-                          <input type="text" name="SKU" class="form-control input-pro">
-                        </div>
+                        <div class="row">
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Nombre</label>
-                          <input type="text" name="NOMBRE" class="form-control input-pro" required>
-                        </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Código de barras</label>
+                            <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
+                          </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Precio</label>
-                          <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
-                        </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">SKU</label>
+                            <input type="text" name="SKU" class="form-control input-pro">
+                          </div>
 
-                        <div class="col-12 mb-3">
-                          <label class="form-label">Descripción</label>
-                          <input type="text" name="DESCRIPCION" class="form-control input-pro">
-                        </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                          </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Categoría</label>
-                          <select name="CATEGORIA_ID" id="categoria" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($c = $categorias->fetch_assoc()): ?>
-                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
+                          </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Lote</label>
-                          <select name="LOTE_ID" id="lote" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($l = $lotes->fetch_assoc()): ?>
-                              <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
+                          <div class="col-12 mb-3">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                          </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Marca</label>
-                          <select name="MARCA_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($m = $marcas->fetch_assoc()): ?>
-                              <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <select name="CATEGORIA_ID" id="categoria" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($c = $categorias->fetch_assoc()): ?>
+                                <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
 
-                        
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Lote</label>
+                            <select name="LOTE_ID" id="lote" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($l = $lotes->fetch_assoc()): ?>
+                                <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
 
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Proveedor</label>
-                          <select name="PROVEEDOR_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($p = $proveedores->fetch_assoc()): ?>
-                              <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Marca</label>
+                            <select name="MARCA_ID" id="marca" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+
+                              <?php while ($m = $marcas->fetch_assoc()): ?>
+                                <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+
+                              <option value="nueva">Agregar nueva marca</option>
+                            </select>
+                            <div class="mt-2" id="contenedorNuevaMarca" style="display:none;">
+                              <input type="text" name="nuevaMarca" id="nuevaMarca" class="form-control input-pro" placeholder="Escribe la nueva marca">
+                            </div>
+                          </div>
+
+                          
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Proveedor</label>
+                            <select name="PROVEEDOR_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($p = $proveedores->fetch_assoc()): ?>
+                                <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
                         </div>
 
                       </div>
 
-                    </div>
-
-                    <div class="modal-footer">
-                      <button type="submit" class="btn ms-2 btn-success"
-                        style="border-radius:10px; padding:8px 20px; font-weight:600;">
-                        Guardar
-                      </button>
-                      <button type="button" class="btn ms-2 btn-danger"
-                        style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
+                      <div class="modal-footer">
+                        <button type="submit" class="btn ms-2 btn-success"
+                          style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                          Guardar
+                        </button>
+                        <button type="button" class="btn ms-2 btn-danger"
+                          style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1370,6 +1447,24 @@
             });
         }
       }
+
+      //AGREGAR NUEVA MARCA
+      const selectMarca = document.getElementById("marca");
+      const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
+      const inputNuevaMarca = document.getElementById("nuevaMarca");
+
+      selectMarca.addEventListener("change", function () {
+
+        if (this.value === "nueva") {
+          contenedorNuevaMarca.style.display = "block";
+          inputNuevaMarca.setAttribute("required", "true");
+        } else {
+          contenedorNuevaMarca.style.display = "none";
+          inputNuevaMarca.removeAttribute("required");
+          inputNuevaMarca.value = "";
+        }
+
+      });
 
       ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
       function buscarReporte() {
