@@ -56,10 +56,6 @@ function guardarStock($conn)
                     WHERE STOCK_ID = ?"
             );
 
-            if ($nuevo_stock <= 50) {
-                $_SESSION['bajo_stock'] = true;
-            }
-
             $update->bind_param("isi", $nuevo_stock, $FECHA_REGISTRO, $row['STOCK_ID']);
             $update->execute();
 
@@ -81,9 +77,7 @@ function guardarStock($conn)
                 $FECHA_REGISTRO,
                 $ubicacion_id
             );
-            if ($unidades <= 50) {
-                $_SESSION['bajo_stock'] = true;
-            }
+
             $insert->execute();
         }
 

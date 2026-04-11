@@ -431,12 +431,7 @@ $movimientos = $conn->query("
     <!-- BIENVENIDA -->
 
     <div class="mb-4">
-      <?php if (isset($_SESSION['bajo_stock'])): ?>
-        <script>
-          alert("hay productos con bajo stock");
-        </script>
-        <?php unset($_SESSION['bajo_stock']); ?>
-      <?php endif; ?>
+
       <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
       <p class="text-muted">Panel de administración</p>
 
@@ -1055,12 +1050,6 @@ $movimientos = $conn->query("
         </div>
 
         <!-- BUSCADOR -->
-        <?php if (isset($_SESSION['productos_bajo_stock'])): ?>
-          <script>
-            alert("Productos con bajo stock:\n\n<?= implode('\n', $_SESSION['productos_bajo_stock']); ?>");
-          </script>
-          <?php unset($_SESSION['productos_bajo_stock']); ?>
-        <?php endif; ?>
         <input type="search" id="buscadorStock" class="form-control mb-3" placeholder="Buscar en sotck...">
         <?php if (isset($_SESSION['mensaje']) || isset($_SESSION['mensaje_stock'])): ?>
 
