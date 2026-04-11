@@ -120,11 +120,17 @@ if (isset($_POST['confirmar'])) {
     unset($_SESSION['proveedor_id']);
     unset($_SESSION['almacen_id']);
     header("location: GenerarCompra.php?ok=1");
+    $_SESSION['mensaje'] = "Orden de compra generada correctamente";
+    $_SESSION['tipo'] = "success";
     exit;
   } catch (Exception $e) {
     $conn->rollback();
-    die("Error al procesar la orden: " . $e->getMessage());
+    $_SESSION['mensaje'] = "Error al generar la orden: " . $e->getMessage();
+    $_SESSION['tipo'] = "danger";
   }
+
+  header("Location: GenerarCompra.php");
+  exit;
 }
 ?>
 
@@ -145,6 +151,12 @@ if (isset($_POST['confirmar'])) {
     <!-- TITULO -->
     <div class="mb-4">
       <h2 class="fw-bold">Nueva Orden de Venta</h2>
+      <?php if (isset($_SESSION['mensaje'])): ?>
+        <div class="alert alert-<?= $_SESSION['tipo']; ?>">
+          <?= $_SESSION['mensaje']; ?>
+        </div>
+        <?php unset($_SESSION['mensaje'], $_SESSION['tipo']); ?>
+      <?php endif; ?>
       <p class="text-muted">Agrega productos y genera la venta</p>
     </div>
 
@@ -164,7 +176,8 @@ if (isset($_POST['confirmar'])) {
 
             <div class="mb-3">
               <label class="form-label">Código de barras</label>
-              <input type="text" id="codigo_barras" class="form-control input-pro" placeholder="Escanea o escribe..." required>
+              <input type="text" id="codigo_barras" class="form-control input-pro" placeholder="Escanea o escribe..."
+                required>
             </div>
 
             <div class="mb-3">

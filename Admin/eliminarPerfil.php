@@ -21,7 +21,10 @@ $stmt = $conn->prepare("DELETE FROM usuarios WHERE ID_USUARIO= ?");
 $stmt->bind_param("i", $producto_id);
 
 if ($stmt->execute()) {
-    header("Location: ../GestionarUsuarios.php");
+    echo "<script>
+          alert('Usuario eliminado correctamente');
+          window.location='../index.php';
+        </script>";
     exit();
 } else {
     echo "Error al eliminar: " . $stmt->error;
