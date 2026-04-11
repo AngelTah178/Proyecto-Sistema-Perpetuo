@@ -941,6 +941,18 @@
 
                       <div class="modal-body">
                         <div class="row">
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Código de barras</label>
+                            <input type="text" id="codigo_barras" class="form-control input-pro" placeholder="Escanea o escribe..." autofocus>
+                          </div>
+                          
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Producto</label>
+                            <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required>
+                              <option value="">Selecciona primero un proveedor</option>
+                            </select>
+                          </div>
+
                           <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
                           <div class="col-md-6 mb-3">
                             <label class="form-label">Proveedor</label>
@@ -951,13 +963,6 @@
                                   <?= $pr['NOMBRE'] ?>
                                 </option>
                               <?php endwhile; ?>
-                            </select>
-                          </div>
-
-                          <div class="col-md-6 mb-3">
-                            <label class="form-label">Producto</label>
-                            <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required>
-                              <option value="">Selecciona primero un proveedor</option>
                             </select>
                           </div>
 
@@ -978,42 +983,22 @@
                               <?php endwhile; ?>
                             </select>
                           </div>
-
-                          <!-- UBICACIÓN -->
-                          <div class="col-12">
-                            <hr>
-                            <h6 class="fw-bold">Ubicación</h6>
-                          </div>
-
-                          <div class="col-md-3 mb-3">
-                            <label class="form-label">Pasillo</label>
-                            <input type="text" name="PASILLO" class="form-control input-pro" required>
-                          </div>
-
-                          <div class="col-md-3 mb-3">
-                            <label class="form-label">Sección</label>
-                            <input type="text" name="SECCION" class="form-control input-pro" required>
-                          </div>
-
-                          <div class="col-md-3 mb-3">
-                            <label class="form-label">Nivel</label>
-                            <input type="text" name="NIVEL" class="form-control input-pro" required>
-                          </div>
-
-                          <div class="col-md-3 mb-3">
-                            <label class="form-label">Estante</label>
-                            <input type="text" name="ESTANTE" class="form-control input-pro" required>
-                          </div>
-
                           <input type="hidden" name="crear_ubicacion" value="1">
 
+                          <?php $ubicaciones = $conn->query("SELECT UBICACION_ID, PASILLO, ESTANTE, NIVEL, SECCION FROM ubicaciones"); ?>
                           <div class="col-md-6 mb-3">
-                            <label class="form-label">Fecha</label>
-                            <input type="date" name="FECHA_REGISTRO" class="form-control input-pro" required>
+                            <label class="form-label">Ubicación</label>
+                            <select name="UBICACION_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona ubicación</option>
+                              <?php while ($u = $ubicaciones->fetch_assoc()): ?>
+                                <option value="<?= $u['UBICACION_ID'] ?>">
+                                  P<?= $u['PASILLO'] ?> - E<?= $u['ESTANTE'] ?> - N<?= $u['NIVEL'] ?> - S<?= $u['SECCION'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
                           </div>
                         </div>
                       </div>
-
                       <div class="modal-footer">
                         <button type="submit" class="btn btn-success">
                           Guardar
@@ -1452,7 +1437,6 @@
       const selectMarca = document.getElementById("marca");
       const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
       const inputNuevaMarca = document.getElementById("nuevaMarca");
-
       selectMarca.addEventListener("change", function () {
 
         if (this.value === "nueva") {
@@ -1464,6 +1448,30 @@
           inputNuevaMarca.value = "";
         }
 
+      });
+
+      //Producto por codigo de barras al generar stock
+      document.getElementById("codigo_barras").addEventListener("keyup", function () {
+        let codigo = this.value.trim();
+        if (codigo.length < 3) return;
+
+        fetch("buscarProductoPorCodigo.php?codigo=" + codigo)
+          .then(res => res.json())
+          .then(data => {
+
+            if (data.success) {
+
+              // SETEAR PRODUCTO
+              document.getElementById("producto").innerHTML =
+                `<option value="${data.producto.PRODUCTO_ID}" selected>
+                  ${data.producto.NOMBRE}
+                </option>`;
+
+              // SETEAR PROVEEDOR
+              document.getElementById("proveedor").value = data.producto.PROVEEDOR_ID;
+
+            }
+          });
       });
 
       ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
