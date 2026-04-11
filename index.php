@@ -1237,18 +1237,27 @@
       });
 
       //Lote de producto ubicado por categoria 
-      document.getElementById('categoria').addEventListener('change', function() {
+      document.getElementById('categoria').addEventListener('change', function () {
         let categoria_id = this.value;
+
+        const lote = document.getElementById('lote');
+        lote.innerHTML = '<option value="">Cargando...</option>';
 
         fetch('obtener_lotes.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
           body: 'categoria_id=' + categoria_id
         })
         .then(response => response.text())
         .then(data => {
-          document.getElementById('lote').innerHTML = data;
+          lote.innerHTML = data;
+        })
+        .catch(() => {
+          lote.innerHTML = '<option value="">Error al cargar</option>';
         });
+
       });
 
       //Buscador de stock
