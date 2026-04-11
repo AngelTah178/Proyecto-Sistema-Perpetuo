@@ -34,7 +34,7 @@
     $nuevaMarca = $_POST['nuevaMarca'] ?? '';
     $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
     $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
-    date_default_timezone_set("America/Mexico_City");
+    date_default_timezone_set("America/Cancun");
     $FECHA_REGISTRO = date("Y-m-d H:i:s");
 
     // Validación básica

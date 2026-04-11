@@ -22,7 +22,7 @@
         $ubicacion_id = $_POST['UBICACION_ID'];
         $unidades = $_POST['UNIDADES'];
 
-        date_default_timezone_set("America/Mexico_City");
+        date_default_timezone_set("America/Cancun");
         $FECHA_REGISTRO = date("Y-m-d H:i:s");
 
         $id_usuario = $_SESSION['ID_USUARIO'];
