@@ -1135,81 +1135,70 @@
 
     <!-- SCRIPTS -->
     <script>
-      const input = document.getElementById("buscador");
-      if (input) {
-        input.addEventListener("keyup", function () {
+      document.addEventListener("DOMContentLoaded", function () {
+        // ================= BUSCADOR PRODUCTOS =================
+        const input = document.getElementById("buscador");
 
-          let valor = input.value.trim();
+        if (input) {
+          input.addEventListener("keyup", function () {
 
-          if (valor === "") {
-            location.reload();
-            return;
-          }
+            let valor = input.value.trim();
 
-          fetch("buscarGeneral.php?q=" + valor)
-          .then(res => res.json())
-          .then(data => {
-
-            let html = "";
-
-            if (data.length === 0) {
-              html = `
-                <tr>
-                  <td colspan="12" class="text-center text-danger">
-                    No se encontraron resultados
-                  </td>
-                </tr>
-              `;
-            } else {
-              data.forEach((p, index) => {
-                html += `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${p.CODIGO_BARRAS}</td>
-                    <td>${p.SKU}</td>
-                    <td>${p.NOMBRE}</td>
-                    <td>${p.DESCRIPCION}</td>
-                    <td>${p.PRECIO}</td>
-                    <td>${p.FECHA_REGISTRO}</td>
-                    <td>${p.LOTE_ID}</td>
-                    <td>${p.MARCA}</td>
-                    <td>${p.CATEGORIA}</td>
-                    <td>${p.PROVEEDOR}</td>
-                  </tr>
-                `;
-              });
+            if (valor === "") {
+              location.reload();
+              return;
             }
 
-            document.getElementById("tbodyProductos").innerHTML = html;
+            fetch("buscarGeneral.php?q=" + valor)
+              .then(res => res.json())
+              .then(data => {
+
+                let html = "";
+
+                if (data.length === 0) {
+                  html = `
+                    <tr>
+                      <td colspan="12" class="text-center text-danger">
+                        No se encontraron resultados
+                      </td>
+                    </tr>
+                  `;
+                } else {
+                  data.forEach((p, index) => {
+                    html += `
+                      <tr>
+                        <td>${index + 1}</td>
+                        <td>${p.CODIGO_BARRAS}</td>
+                        <td>${p.SKU}</td>
+                        <td>${p.NOMBRE}</td>
+                        <td>${p.DESCRIPCION}</td>
+                        <td>${p.PRECIO}</td>
+                        <td>${p.FECHA_REGISTRO}</td>
+                        <td>${p.LOTE_ID}</td>
+                        <td>${p.MARCA}</td>
+                        <td>${p.CATEGORIA}</td>
+                        <td>${p.PROVEEDOR}</td>
+                      </tr>
+                    `;
+                  });
+                }
+
+                document.getElementById("tbodyProductos").innerHTML = html;
+              });
+
           });
+        }
 
-        });
-      }
-
-      //Lote de producto ubicado por categoria 
-      document.getElementById('categoria').addEventListener('change', function() {
-        let categoria_id = this.value;
-
-        fetch('obtener_lotes.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'categoria_id=' + categoria_id
-        })
-        .then(response => response.text())
-        .then(data => {
-          document.getElementById('lote').innerHTML = data;
-        });
-      });
-
-      //Buscador de Usuarios
-      document.addEventListener("DOMContentLoaded", function () {
-
+        // ================= BUSCADOR USUARIOS =================
         const buscadorUsuario = document.getElementById("buscadorUsuario");
+        const tbodyUsuarios = document.getElementById("tbodyUsuarios");
 
-        if (buscadorUsuario) {
+        if (buscadorUsuario && tbodyUsuarios) {
           buscadorUsuario.addEventListener("keyup", function () {
 
             let valor = this.value.trim();
+
+            console.log("ESCRIBIENDO:", valor); // prueba
 
             if (valor === "") {
               location.reload();
@@ -1240,12 +1229,26 @@
                   });
                 }
 
-                document.getElementById("tbodyUsuarios").innerHTML = html;
+                tbodyUsuarios.innerHTML = html;
               });
 
           });
         }
+      });
 
+      //Lote de producto ubicado por categoria 
+      document.getElementById('categoria').addEventListener('change', function() {
+        let categoria_id = this.value;
+
+        fetch('obtener_lotes.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'categoria_id=' + categoria_id
+        })
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('lote').innerHTML = data;
+        });
       });
 
       //Buscador de stock

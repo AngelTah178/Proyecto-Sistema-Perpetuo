@@ -5,12 +5,17 @@
 
   $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
 
+  if ($q == "") {
+    echo json_encode([]);
+    exit;
+  }
+
   $sql = "SELECT * FROM usuarios 
   WHERE 
-    NOMBRE LIKE '%$q%' OR
-    APELLIDO_P LIKE '%$q%' OR
-    APELLIDO_M LIKE '%$q%' OR
-    CORREO LIKE '%$q%'";
+  NOMBRE LIKE '%$q%' OR
+  APELLIDO_P LIKE '%$q%' OR
+  APELLIDO_M LIKE '%$q%' OR
+  CORREO LIKE '%$q%'";
 
   $result = $conn->query($sql);
 
@@ -23,3 +28,4 @@
   }
 
   echo json_encode($data);
+?>
