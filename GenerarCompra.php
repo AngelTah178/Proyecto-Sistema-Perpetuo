@@ -153,50 +153,40 @@ if (isset($_POST['confirmar'])) {
       <!-- FORMULARIO -->
       <div class="col-md-5">
         <div class="card shadow-sm p-4">
-          <div class="mb-2">
-
-            <button class="btn btn-danger" onclick="window.location.href='index.php'">Salir</button>
-
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Datos de la orden</h5>
+            <button class="btn btn-outline-danger btn-sm" onclick="window.location.href='index.php'">
+              Salir
+            </button>
           </div>
-          <h5 class="mb-3">Datos de la orden</h5>
 
           <form method="POST">
 
-            <!-- PROVEEDOR -->
-            <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
             <div class="mb-3">
-              <label class="form-label">Proveedor</label>
-              <select name="PROVEEDOR_ID" id="proveedor" class="form-control input-pro" required>
-                <option value="">Selecciona proveedor</option>
-                <?php while ($pr = $proveedores->fetch_assoc()): ?>
-                  <option value="<?= $pr['PROVEEDOR_ID'] ?>">
-                    <?= $pr['NOMBRE'] ?>
-                  </option>
-                <?php endwhile; ?>
-              </select>
+              <label class="form-label">Código de barras</label>
+              <input type="text" id="codigo_barras" class="form-control input-pro" placeholder="Escanea o escribe..." required>
             </div>
 
-            <!-- ALMACEN -->
-            <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
+            <div class="mb-3">
+              <label class="form-label">Producto</label>
+              <input type="text" id="nombre_producto" class="form-control input-pro" readonly>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Proveedor</label>
+              <input type="text" id="proveedor_nombre" class="form-control input-pro" readonly>
+            </div>
+
             <div class="mb-3">
               <label class="form-label">Almacén</label>
               <select name="ALMACEN_ID" id="almacen" class="form-control input-pro" required>
-                <option value="">Selecciona almacén</option>
-                <?php while ($al = $almacenes->fetch_assoc()): ?>
-                  <option value="<?= $al['ALMACEN_ID'] ?>">
-                    <?= $al['ALMACEN'] ?>
-                  </option>
-                <?php endwhile; ?>
+                <option value="">Escanea un producto primero</option>
               </select>
             </div>
 
-            <!-- PRODUCTO -->
-            <div class="mb-3">
-              <label class="form-label">Producto</label>
-              <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required disabled>
-                <option value="">Selecciona primero proveedor y almacén</option>
-              </select>
-            </div>
+            <!-- OCULTOS -->
+            <input type="hidden" name="PRODUCTO_ID" id="producto_id">
+            <input type="hidden" name="PROVEEDOR_ID" id="proveedor_id">
 
             <!-- UNIDADES -->
             <div class="mb-3">
@@ -304,36 +294,50 @@ if (isset($_POST['confirmar'])) {
   </div>
 
   <script>
-    //VALIDAR SI SE SELECCIONIÓ UN PROVEEDOR
+    //Datos con el codigo de barras
     document.addEventListener("DOMContentLoaded", function () {
+      const codigo = document.getElementById("codigo_barras");
+      codigo.addEventListener("keyup", function () {
 
-      const proveedor = document.getElementById("proveedor");
-      const almacen = document.getElementById("almacen");
-      const producto = document.getElementById("producto");
+        let valor = this.value.trim();
 
-      function cargarProductos() {
-        let proveedorId = proveedor.value;
-        let almacenId = almacen.value;
+        if (valor.length < 3) return;
 
-        producto.innerHTML = '<option>Cargando...</option>';
-        producto.disabled = true;
-
-        if (proveedorId === "" || almacenId === "") {
-          producto.innerHTML = '<option>Selecciona proveedor y almacén</option>';
-          return;
-        }
-
-        fetch(`obtener_productos.php?proveedor_id=${proveedorId}&almacen_id=${almacenId}`)
-          .then(res => res.text())
+        fetch("buscarProductoCodigo.php?codigo=" + encodeURIComponent(valor))
+          .then(res => res.json())
           .then(data => {
-            producto.innerHTML = data;
-            producto.disabled = false;
+
+            if (!data || data.length === 0) {
+              document.getElementById("nombre_producto").value = "";
+              document.getElementById("proveedor_nombre").value = "";
+              document.getElementById("almacen").innerHTML = '<option>No encontrado</option>';
+              return;
+            }
+
+            // PRODUCTO Y PROVEEDOR
+            document.getElementById("nombre_producto").value = data[0].NOMBRE;
+            document.getElementById("proveedor_nombre").value = data[0].PROVEEDOR;
+
+            document.getElementById("producto_id").value = data[0].PRODUCTO_ID;
+            document.getElementById("proveedor_id").value = data[0].PROVEEDOR_ID;
+
+            // ALMACENES
+            let select = document.getElementById("almacen");
+            select.innerHTML = '<option value="">Selecciona almacén</option>';
+
+            data.forEach(item => {
+              if (item.ALMACEN_ID) {
+                select.innerHTML += `
+                  <option value="${item.ALMACEN_ID}">
+                    ${item.ALMACEN} (Stock: ${item.UNIDADES})
+                  </option>
+                `;
+              }
+            });
+
           });
-      }
 
-      proveedor.addEventListener("change", cargarProductos);
-      almacen.addEventListener("change", cargarProductos);
-
+      });
     });
   </script>
 </body>
