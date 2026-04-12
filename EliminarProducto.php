@@ -2,42 +2,55 @@
 session_start();
 include "conexion.php";
 
-// Validar que el usuario tenga sesión
+// Validar sesión
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  echo json_encode(["success" => false, "message" => "Acceso no autorizado"]);
-  exit;
-}
-$id = $_POST['id'] ?? null;
-if (!$id) {
-  echo json_encode(["success" => false, "message" => "ID de producto inválido"]);
+  $_SESSION['mensajeProducto'] = "Acceso no autorizado";
+  $_SESSION['tipoProducto'] = "danger";
+  header("Location: index.php");
   exit;
 }
 
-//validar movimientos
+$id = $_POST['id'] ?? null;
+
+if (!$id) {
+  $_SESSION['mensajeProducto'] = "ID de producto inválido";
+  $_SESSION['tipoProducto'] = "danger";
+  header("Location: index.php");
+  exit;
+}
+
+// validar movimientos
 $stmt = $conn->prepare(
   "SELECT COUNT(*) AS total
-    FROM movimientos
-    WHERE PRODUCTO_ID = ?"
+   FROM movimientos
+   WHERE PRODUCTO_ID = ?
+   AND TIPO_ID <> 3"
 );
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result()->fetch_assoc();
 
 if ($result['total'] > 0) {
-  echo json_encode(
-    ["success" => false, "message" => "No puedes eliminar este producto porque tiene movimientos registrados"]
-  );
+  $_SESSION['mensajeProducto'] = "No puedes eliminar este producto porque tiene movimientos distintos a ALTA";
+  $_SESSION['tipoProducto'] = "warning";
+  header("Location: index.php");
   exit;
 }
 
-//si no hay movimientos, elimina producto
+// eliminar producto
 $stmt = $conn->prepare(
   "DELETE FROM productos WHERE PRODUCTO_ID = ?"
 );
 $stmt->bind_param("i", $id);
+
 if ($stmt->execute()) {
-  echo json_encode(["success" => true]);
+  $_SESSION['mensajeProducto'] = "Producto eliminado correctamente";
+  $_SESSION['tipoProducto'] = "success";
 } else {
-  echo json_encode(["success" => false, "message" => "Error al eliminar"]);
+  $_SESSION['mensajeProducto'] = "Error al eliminar producto";
+  $_SESSION['tipoProducto'] = "danger";
 }
+
+header("Location: index.php");
+exit;
 ?>

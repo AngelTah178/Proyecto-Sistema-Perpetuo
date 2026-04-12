@@ -90,10 +90,10 @@ if (isset($_POST['form_producto'])) {
       }
 
       $stmt = $conn->prepare("
-          INSERT INTO productos 
-          (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+  INSERT INTO productos 
+  (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
 
       $stmt->bind_param(
         "ssssdsiiii",
@@ -110,8 +110,43 @@ if (isset($_POST['form_producto'])) {
       );
 
       if ($stmt->execute()) {
+
+        $producto_id = $conn->insert_id;
+
+        $fecha = $FECHA_REGISTRO;
+        $cantidad = 0; // no aplica
+        $tipo = 3; // alta de producto
+        $id_usuario = $_SESSION['ID_USUARIO'];
+        $proveedor_id = $PROVEEDOR_ID;
+        $almacen_id = null; // no aplica
+
+        $mov = $conn->prepare("
+  INSERT INTO movimientos 
+  (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID) 
+  VALUES (?, ?, ?, ?, ?, ?, ?)
+");
+
+        $mov->bind_param(
+          "siiiiii",
+          $fecha,
+          $cantidad,
+          $tipo,
+          $id_usuario,
+          $proveedor_id,
+          $producto_id,
+          $almacen_id
+        );
+        if (!$mov->execute()) {
+          echo "Error al registrar movimiento: " . $mov->error;
+          exit();
+        }
+
+        $_SESSION['mensajeProducto'] = "Producto agregado correctamente";
+        $_SESSION['tipoProducto'] = "success";
+
         header("Location: index.php");
         exit();
+
       } else {
         echo "Error al insertar producto: " . $stmt->error;
       }
@@ -155,7 +190,6 @@ if (isset($_POST['form_proveedor'])) {
   }
 }
 
-// ================== ACTUALIZAR PRODUCTO ==================
 if (isset($_POST['form_editar_producto'])) {
 
   $id = $_POST['PRODUCTO_ID'];
@@ -166,6 +200,7 @@ if (isset($_POST['form_editar_producto'])) {
   $proveedor = $_POST['PROVEEDOR_ID'];
   $lote = $_POST['LOTE_ID'];
 
+  // ================== ACTUALIZAR PRODUCTO ==================
   $stmt = $conn->prepare("
       UPDATE productos SET 
       NOMBRE = ?, 
@@ -175,16 +210,52 @@ if (isset($_POST['form_editar_producto'])) {
       PROVEEDOR_ID = ?, 
       LOTE_ID = ?
       WHERE PRODUCTO_ID = ?
-    ");
+  ");
 
-  $stmt->bind_param("sdiiiii", $nombre, $precio, $marca, $categoria, $proveedor, $lote, $id);
+  $stmt->bind_param(
+    "sdiiiii",
+    $nombre,
+    $precio,
+    $marca,
+    $categoria,
+    $proveedor,
+    $lote,
+    $id
+  );
 
   if ($stmt->execute()) {
+
+    // ================== REGISTRAR MOVIMIENTO (EDICIÓN) ==================
+    $fecha = date("Y-m-d H:i:s");
+    $tipo = 5; // EDICIÓN
+    $cantidad = 0;
+    $usuario = $_SESSION['ID_USUARIO'];
+
+    $mov = $conn->prepare("
+      INSERT INTO movimientos
+      (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID)
+      VALUES (?, ?, ?, ?, ?, ?)
+    ");
+
+    $mov->bind_param(
+      "siiiii",
+      $fecha,
+      $cantidad,
+      $tipo,
+      $usuario,
+      $proveedor,
+      $id
+    );
+
+    $mov->execute();
+
+    // ================== MENSAJE ==================
     $_SESSION['mensajeProducto'] = "Producto actualizado correctamente";
     $_SESSION['tipoProducto'] = "success";
 
     header("Location: index.php");
     exit();
+
   } else {
     echo "Error al actualizar producto: " . $stmt->error;
   }
@@ -921,9 +992,14 @@ $movimientos = $conn->query("
                       </div>
                     </div>
 
-                    <button class="btn btn-sm btn-danger" onclick="eliminarProducto(<?= $p['PRODUCTO_ID']; ?>)">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                    <form method="POST" action="EliminarProducto.php" style="display:inline;">
+                      <input type="hidden" name="id" value="<?= $p['PRODUCTO_ID']; ?>">
+
+                      <button type="submit" class="btn btn-sm btn-danger"
+                        onclick="return confirm('¿Estás seguro de eliminar este producto?');">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
 
                   </td>
                 </tr>
@@ -949,6 +1025,7 @@ $movimientos = $conn->query("
 
     <!-- GESTIÓN DE STOCK -->
     <?php if ($rol == 'empleado'): ?>
+
       <div class="card shadow-sm p-4 mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4>Gestión de Stock</h4>
@@ -1089,7 +1166,23 @@ $movimientos = $conn->query("
 
             <tbody id="tbodyStock">
               <?php $contador = $offset_stock + 1; ?>
-              <?php while ($s = $stock->fetch_assoc()): ?>
+              <?php
+              #creamos un arreglo para almacenar los productos que tienen bajo stock
+              $productosBajoStock = [];
+              #reiniciamos puntero
+              $stock->data_seek(0);
+              #en este punto con un while comparamos cada unos de los campos unidades para verificar
+              #que sean menores o iguales a 50
+              #si pasa esto entonces se van guardando en el array
+              while ($temp = $stock->fetch_assoc()) {
+                if ($temp['UNIDADES'] <= 50) {
+                  $productosBajoStock[] = $temp['NOMBRE'] . " (" . $temp['UNIDADES'] . ")";
+                }
+              }
+              $stock->data_seek(0);
+              ?>
+              <!--esto no lo eliminen por alguna razón si lo hago se descuadra todo-->
+              <?php while ($s = $stock->fetch_assoc()): #pero está raro pq solo era para verificar si había stock bajoXD ?>
                 <tr>
                   <td><?= $contador++; ?></td>
 
@@ -1112,7 +1205,16 @@ $movimientos = $conn->query("
                 </tr>
               <?php endwhile; ?>
             </tbody>
-
+            <?php if (!empty($productosBajoStock)): ?>
+              <div class="alert alert-warning">
+                <strong>Productos con bajo stock:</strong>
+                <ul class="mb-0">
+                  <?php foreach ($productosBajoStock as $producto): ?>
+                    <li><?= $producto; ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
           </table>
           <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
             <a class="btn btn-light <?= ($pagina_stock <= 1) ? 'disabled' : '' ?>"
@@ -1170,6 +1272,9 @@ $movimientos = $conn->query("
                         <option value="">Todos</option>
                         <option value="1">Entradas</option>
                         <option value="2">Salidas</option>
+                        <option value="3">Altas</option>
+                        <option value="4">Bajas</option>
+                        <option value="5">Edición</option>
                       </select>
                     </div>
                   </div>
@@ -1446,7 +1551,7 @@ $movimientos = $conn->query("
       modal.show();
     }
 
-    function eliminarProducto(id) {
+    /*function eliminarProducto(id) {
       // 1. Pedimos confirmación al usuario
       if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
 
@@ -1469,11 +1574,13 @@ $movimientos = $conn->query("
           })
           .then(data => {
             if (data.success) {
+
               // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
               let fila = document.getElementById('fila-producto-' + id);
               if (fila) {
                 fila.remove();
               }
+
             } else {
               // El PHP devolvió success = false (ej. error de llaves foráneas)
               alert("Error al eliminar el producto: " + data.message);
@@ -1486,7 +1593,7 @@ $movimientos = $conn->query("
           });
       }
     }
-
+*/
     //AGREGAR NUEVA MARCA
     const selectMarca = document.getElementById("marca");
     const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");

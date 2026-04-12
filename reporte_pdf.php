@@ -46,11 +46,60 @@ $sql .= " ORDER BY m.FECHA_REGISTRO DESC";
 $result = $conn->query($sql);
 
 # ================= HTML DEL PDF =================
-$html = '
-<h2 style="text-align:center;">Reporte de Movimientos</h2>
+# ================= HTML DEL PDF =================
+$logo = __DIR__ . "C:\xampp\htdocs\Proyecto-Sistema-Perpetuo\Assets\Logo.png";
 
-<table border="1" width="100%" cellpadding="5" cellspacing="0">
-<tr style="background:#eee;">
+$html = '
+<style>
+    .header {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .logo {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 80px;
+    }
+
+    h2 {
+        text-align: center;
+        margin: 0;
+        padding-top: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 40px;
+        font-size: 12px;
+    }
+
+    th, td {
+        border: 1px solid #999;
+        padding: 6px;
+        text-align: center;
+    }
+
+    th {
+        background: #eee;
+    }
+
+    .entrada { color: green; font-weight: bold; }
+    .salida  { color: purple; font-weight: bold; }
+    .alta    { color: blue; font-weight: bold; }
+    .baja    { color: red; font-weight: bold; }
+    .edicion { color: deeppink; font-weight: bold; }
+</style>
+
+<div class="header">
+    <img class="logo" src="C:\xampp\htdocs\Proyecto-Sistema-Perpetuo\Assets\Logo.png">
+    <h2>Reporte de Movimientos</h2>
+</div>
+
+<table>
+<tr>
     <th>Tipo</th>
     <th>Usuario</th>
     <th>Fecha</th>
@@ -61,8 +110,25 @@ $html = '
 </tr>';
 
 while ($row = $result->fetch_assoc()) {
+
+    // color según tipo
+    $tipo = strtolower($row['MOVIMIENTO']);
+
+    if ($tipo == 'entrada')
+        $clase = 'entrada';
+    elseif ($tipo == 'salida')
+        $clase = 'salida';
+    elseif ($tipo == 'alta')
+        $clase = 'alta';
+    elseif ($tipo == 'baja')
+        $clase = 'baja';
+    elseif ($tipo == 'edicion' || $tipo == 'edición')
+        $clase = 'edicion';
+    else
+        $clase = '';
+
     $html .= "<tr>
-        <td>{$row['MOVIMIENTO']}</td>
+        <td class='$clase'>{$row['MOVIMIENTO']}</td>
         <td>{$row['USUARIO']}</td>
         <td>{$row['FECHA_REGISTRO']}</td>
         <td>{$row['PRODUCTO']}</td>
