@@ -1268,7 +1268,7 @@ $movimientos = $conn->query("
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
 
-              <div class="modal-header">
+              <div class="modal-header" style="color: white;">
                 <h5>Generar Reporte</h5>
               </div>
 
@@ -1308,13 +1308,15 @@ $movimientos = $conn->query("
                   <div id="tabla_reporte"></div>
 
                 </div>
+                <div class="mb-3 mt-3 d-flex justify-content-center"> <button class="btn btn-success"
+                    onclick="generarPDF()">Imprimir</button>
 
-                <button class="btn btn-success" onclick="generarPDF()">Imprimir</button>
+                  <button type="button" class="btn ms-2 btn-danger"
+                    style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                    Cancelar
+                  </button>
+                </div>
 
-                <button type="button" class="btn ms-2 btn-danger"
-                  style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                  Cancelar
-                </button>
               </div>
             </div>
           </div>
