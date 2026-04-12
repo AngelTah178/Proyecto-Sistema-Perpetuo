@@ -2,6 +2,7 @@
 require_once __DIR__ . "/dompdf/autoload.inc.php";
 use Dompdf\Dompdf;
 
+
 include "conexion.php";
 
 $inicio = $_GET['inicio'] ?? '';
@@ -47,8 +48,17 @@ $result = $conn->query($sql);
 
 # ================= HTML DEL PDF =================
 # ================= HTML DEL PDF =================
-$logo = __DIR__ . "C:\xampp\htdocs\Proyecto-Sistema-Perpetuo\Assets\Logo.png";
+$path = __DIR__ . '/assets/Logo.png';
 
+if (file_exists($path)) {
+    $type = pathinfo($path, PATHINFO_EXTENSION);
+    $data = file_get_contents($path);
+    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+    $img = '<img src="' . $base64 . '" width="200">';
+} else {
+    $img = '<p>NO SE ENCONTRÓ EL LOGO</p>';
+}
 $html = '
 <style>
     .header {
@@ -94,10 +104,8 @@ $html = '
 </style>
 
 <div class="header">
-    <img class="logo" src="C:\xampp\htdocs\Proyecto-Sistema-Perpetuo\Assets\Logo.png">
+' . $img . '
     <h2>Reporte de Movimientos</h2>
-</div>
-
 <table>
 <tr>
     <th>Tipo</th>
@@ -142,6 +150,13 @@ $html .= "</table>";
 
 # ================= GENERAR PDF =================
 $dompdf = new Dompdf();
+use Dompdf\Options;
+
+$options = new Options();
+$options->set('isRemoteEnabled', true);
+$options->set('isHtml5ParserEnabled', true);
+
+$dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 
 $dompdf->setPaper("letter", "portrait");

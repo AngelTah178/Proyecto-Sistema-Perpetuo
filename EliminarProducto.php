@@ -2,51 +2,91 @@
 session_start();
 include "conexion.php";
 
-// Validar sesión
+// ================== VALIDAR SESIÓN ==================
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  $_SESSION['mensajeProducto'] = "Acceso no autorizado";
-  $_SESSION['tipoProducto'] = "danger";
   header("Location: index.php");
   exit;
 }
 
+// ================== VALIDAR ID ==================
 $id = $_POST['id'] ?? null;
 
 if (!$id) {
-  $_SESSION['mensajeProducto'] = "ID de producto inválido";
+  $_SESSION['mensajeProducto'] = "ID inválido";
   $_SESSION['tipoProducto'] = "danger";
   header("Location: index.php");
   exit;
 }
 
-// validar movimientos
-$stmt = $conn->prepare(
-  "SELECT COUNT(*) AS total
-   FROM movimientos
-   WHERE PRODUCTO_ID = ?
-   AND TIPO_ID <> 3"
-);
+// ================== VERIFICAR ESTADO ==================
+$stmt = $conn->prepare("SELECT ESTADO, PROVEEDOR_ID FROM productos WHERE PRODUCTO_ID = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
-$result = $stmt->get_result()->fetch_assoc();
+$res = $stmt->get_result()->fetch_assoc();
 
-if ($result['total'] > 0) {
-  $_SESSION['mensajeProducto'] = "No puedes eliminar este producto porque tiene movimientos distintos a ALTA";
+if (!$res) {
+  $_SESSION['mensajeProducto'] = "Producto no encontrado";
+  $_SESSION['tipoProducto'] = "danger";
+  header("Location: index.php");
+  exit;
+}
+
+if ($res['ESTADO'] == 0) {
+  $_SESSION['mensajeProducto'] = "Este producto ya está eliminado";
   $_SESSION['tipoProducto'] = "warning";
   header("Location: index.php");
   exit;
 }
 
-// eliminar producto
-$stmt = $conn->prepare(
-  "DELETE FROM productos WHERE PRODUCTO_ID = ?"
+// ================== DATOS PARA MOVIMIENTO ==================
+$id_usuario = $_SESSION['ID_USUARIO'];
+$fecha = date("Y-m-d H:i:s");
+$cantidad = 0;
+$tipo = 4; // BAJA
+$almacen_id = null;
+$proveedor_id = $res['PROVEEDOR_ID'];
+
+// ================== INSERTAR MOVIMIENTO (BAJA) ==================
+$mov = $conn->prepare("
+  INSERT INTO movimientos 
+  (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID) 
+  VALUES (?, ?, ?, ?, ?, ?, ?)
+");
+
+$mov->bind_param(
+  "siiiiii",
+  $fecha,
+  $cantidad,
+  $tipo,
+  $id_usuario,
+  $proveedor_id,
+  $id,
+  $almacen_id
 );
+
+if (!$mov->execute()) {
+  $_SESSION['mensajeProducto'] = "Error al registrar movimiento: " . $mov->error;
+  $_SESSION['tipoProducto'] = "danger";
+  header("Location: index.php");
+  exit;
+}
+
+// ================== BAJA LÓGICA ==================
+$stmt = $conn->prepare("
+  UPDATE productos 
+  SET ESTADO = 0 
+  WHERE PRODUCTO_ID = ?
+");
+
 $stmt->bind_param("i", $id);
 
 if ($stmt->execute()) {
+
   $_SESSION['mensajeProducto'] = "Producto eliminado correctamente";
   $_SESSION['tipoProducto'] = "success";
+
 } else {
+
   $_SESSION['mensajeProducto'] = "Error al eliminar producto";
   $_SESSION['tipoProducto'] = "danger";
 }

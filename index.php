@@ -200,6 +200,24 @@ if (isset($_POST['form_editar_producto'])) {
   $proveedor = $_POST['PROVEEDOR_ID'];
   $lote = $_POST['LOTE_ID'];
 
+  // ================== VALIDAR MOVIMIENTOS ==================
+  $check = $conn->prepare("
+    SELECT COUNT(*) AS total
+    FROM movimientos
+    WHERE PRODUCTO_ID = ? AND TIPO_ID <> 3
+  ");
+
+  $check->bind_param("i", $id);
+  $check->execute();
+  $res = $check->get_result()->fetch_assoc();
+
+  if ($res['total'] > 0) {
+    $_SESSION['mensajeProducto'] = "No se puede editar: el producto ya tiene movimientos";
+    $_SESSION['tipoProducto'] = "danger";
+    header("Location: index.php");
+    exit();
+  }
+
   // ================== ACTUALIZAR PRODUCTO ==================
   $stmt = $conn->prepare("
       UPDATE productos SET 
@@ -227,7 +245,7 @@ if (isset($_POST['form_editar_producto'])) {
 
     // ================== REGISTRAR MOVIMIENTO (EDICIÓN) ==================
     $fecha = date("Y-m-d H:i:s");
-    $tipo = 5; // EDICIÓN
+    $tipo = 5;
     $cantidad = 0;
     $usuario = $_SESSION['ID_USUARIO'];
 
@@ -249,7 +267,6 @@ if (isset($_POST['form_editar_producto'])) {
 
     $mov->execute();
 
-    // ================== MENSAJE ==================
     $_SESSION['mensajeProducto'] = "Producto actualizado correctamente";
     $_SESSION['tipoProducto'] = "success";
 
@@ -430,6 +447,8 @@ $productos = $conn->query("
       LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
       LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
       LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
+            WHERE p.ESTADO = 1
+
       LIMIT $offset_productos, $registros_por_pagina
     ")->fetch_all(MYSQLI_ASSOC);
 
