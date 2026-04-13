@@ -40,6 +40,8 @@ if ($res['ESTADO'] == 0) {
 
 // ================== DATOS PARA MOVIMIENTO ==================
 $id_usuario = $_SESSION['ID_USUARIO'];
+date_default_timezone_set("America/Mexico_City");
+
 $fecha = date("Y-m-d H:i:s");
 $cantidad = 0;
 $tipo = 4; // BAJA

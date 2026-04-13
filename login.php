@@ -16,12 +16,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   #SI ES 0 ENTONCES EL USUARIO NO EXISTE.
   if ($result->num_rows == 0) {
-    $error = "El usuario no existe";
+    $_SESSION['mensajeUsuario'] = "El usuario no existe";
+    header("Location: login.php");
+    exit();
+
   } else {
     $usuario = $result->fetch_assoc();
 
     if (!password_verify($CONTRASEÑA, $usuario["CONTRASEÑA"])) {
-      $error = "Contraseña incorrecta";
+      $_SESSION['mensajeUsuario'] = "Contraseña incorrecta";
+      header("Location: login.php");
+      exit();
     } else {
       // Guardar datos en sesión
       $_SESSION["ID_USUARIO"] = $usuario["ID_USUARIO"];
@@ -50,6 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <link rel="stylesheet" href="CSS/login.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar sesión</title>
+
   <style>
     a:hover,
     button:hover {
@@ -69,7 +75,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <h3 class="text-center mb-4 login-title">
         Iniciar sesión
       </h3>
-
+      <?php if (isset($_SESSION['mensajeUsuario'])): ?>
+        <div class="alert alert-warning">
+          <?= $_SESSION['mensajeUsuario']; ?>
+        </div>
+      <?php endif; ?>
       <?php if (isset($_GET['error'])): ?>
 
         <div class="alert alert-danger text-center fw-bold" style="border-radius:10px;">
