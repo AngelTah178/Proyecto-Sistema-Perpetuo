@@ -1309,27 +1309,22 @@
                       <div id="tabla_reporte"></div>
                     </div>
 
-                  </div>
-
-                  <!-- FOOTER -->
-                  <div class="modal-footer">
-                    <button class="btn btn-pdf" onclick="generarPDF()">
-                      Imprimir
-                    </button>
-
-                    <button type="button" class="btn btn-cancelar btn-danger" data-bs-dismiss="modal">
-                      Cancelar
-                    </button>
-                  </div>
-
                 </div>
+
+                <button class="btn btn-success" onclick="generarPDF()">Imprimir</button>
+
+                <button type="button" class="btn ms-2 btn-danger"
+                  style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>
-          
-          <!-- TABLA DE MOVIMIENTOS -->
-          <div class="table-responsive">
-            <table class="table table-hover align-middle">
+        </div>
+
+        <!-- TABLA DE MOVIMIENTOS -->
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
 
               <thead class="table-dark">
                 <tr>
