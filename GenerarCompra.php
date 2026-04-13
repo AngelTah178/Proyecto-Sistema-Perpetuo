@@ -2,6 +2,8 @@
 session_start();
 include "conexion.php";
 
+date_default_timezone_set('America/Cancun');
+
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
   header("Location: login.php");
   exit;

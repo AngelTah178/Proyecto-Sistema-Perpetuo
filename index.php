@@ -1246,7 +1246,7 @@
       <?php endif; ?>
 
       <!-- GESTIÓN DE MOVIMIENTOS -->
-      <?php if ($rol == 'empleado'): ?>
+      <?php if ($rol == 'empleado' || $rol == 'admin' ): ?>
         <div class="card shadow-sm p-4 mt-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Movimientos</h4>
