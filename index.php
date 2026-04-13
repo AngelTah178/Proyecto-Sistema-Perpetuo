@@ -1,225 +1,238 @@
 <?php
-session_start();
-include "conexion.php";
+  session_start();
+  include "conexion.php";
 
-include "Stock.php";
+  include "Stock.php";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_existencas'])) {
-  try {
-    guardarStock($conn);
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_existencas'])) {
+    try {
+      guardarStock($conn);
 
-    $_SESSION['mensaje'] = "Stock agregado correctamente";
-    $_SESSION['tipo'] = "success";
+      $_SESSION['mensaje'] = "Stock agregado correctamente";
+      $_SESSION['tipo'] = "success";
 
-  } catch (Exception $e) {
+    } catch (Exception $e) {
 
-    $_SESSION['mensaje'] = $e->getMessage();
-    $_SESSION['tipo'] = "danger";
-  }
-
-  header("Location: index.php");
-  exit();
-}
-
-
-// ================== VALIDAR SESIÓN ==================
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  header("Location: login.php");
-  exit;
-}
-
-$rol = $_SESSION['ROL'];
-
-// ================== INSERTAR PRODUCTO ==================
-if (isset($_POST['form_producto'])) {
-
-  $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"] ?? null;
-  $SKU = $_POST["SKU"] ?? null;
-  $NOMBRE = $_POST["NOMBRE"] ?? null;
-  $DESCRIPCION = $_POST["DESCRIPCION"] ?? null;
-  $PRECIO = $_POST["PRECIO"] ?? 0;
-  $LOTE_ID = $_POST["LOTE_ID"] ?? null;
-  $MARCA_ID = $_POST["MARCA_ID"] ?? null;
-  $nuevaMarca = $_POST['nuevaMarca'] ?? '';
-  $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
-  $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
-  date_default_timezone_set("America/Cancun");
-  $FECHA_REGISTRO = date("Y-m-d H:i:s");
-
-  // Validación básica
-  if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
-
-    // Validación de lo duplicado
-    $check = $conn->prepare("SELECT PRODUCTO_ID FROM productos WHERE CODIGO_BARRAS = ?");
-    $check->bind_param("s", $CODIGO_BARRAS);
-    $check->execute();
-    $resultado = $check->get_result();
-
-    if ($resultado->num_rows > 0) {
-      echo "<script>alert('Este código de barras ya está registrado');</script>";
-    } else {
-
-      // ================== VALIDAR / CREAR MARCA ==================
-      $nuevaMarca = $_POST['nuevaMarca'] ?? '';
-      if ($MARCA_ID === "nueva") {
-
-        if (!empty($nuevaMarca)) {
-
-          // Buscar si ya existe
-          $checkMarca = $conn->prepare("SELECT MARCA_ID FROM marcas WHERE NOMBRE = ?");
-          $checkMarca->bind_param("s", $nuevaMarca);
-          $checkMarca->execute();
-          $resMarca = $checkMarca->get_result();
-
-          if ($resMarca->num_rows > 0) {
-            $MARCA_ID = $resMarca->fetch_assoc()['MARCA_ID'];
-          } else {
-            $insertMarca = $conn->prepare("INSERT INTO marcas (NOMBRE, FECHA_REGISTRO) VALUES (?, NOW())");
-            $insertMarca->bind_param("s", $nuevaMarca);
-
-            if (!$insertMarca->execute()) {
-              die("Error al insertar marca: " . $insertMarca->error);
-            }
-
-            $MARCA_ID = $conn->insert_id;
-          }
-
-        } else {
-          die("Debes escribir el nombre de la nueva marca");
-        }
-      }
-
-      $stmt = $conn->prepare("
-  INSERT INTO productos 
-  (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-");
-
-      $stmt->bind_param(
-        "ssssdsiiii",
-        $CODIGO_BARRAS,
-        $SKU,
-        $NOMBRE,
-        $DESCRIPCION,
-        $PRECIO,
-        $FECHA_REGISTRO,
-        $LOTE_ID,
-        $MARCA_ID,
-        $CATEGORIA_ID,
-        $PROVEEDOR_ID
-      );
-
-      if ($stmt->execute()) {
-
-        $producto_id = $conn->insert_id;
-
-        $fecha = $FECHA_REGISTRO;
-        $cantidad = 0; // no aplica
-        $tipo = 3; // alta de producto
-        $id_usuario = $_SESSION['ID_USUARIO'];
-        $proveedor_id = $PROVEEDOR_ID;
-        $almacen_id = null; // no aplica
-
-        $mov = $conn->prepare("
-  INSERT INTO movimientos 
-  (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID) 
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-");
-
-        $mov->bind_param(
-          "siiiiii",
-          $fecha,
-          $cantidad,
-          $tipo,
-          $id_usuario,
-          $proveedor_id,
-          $producto_id,
-          $almacen_id
-        );
-        if (!$mov->execute()) {
-          echo "Error al registrar movimiento: " . $mov->error;
-          exit();
-        }
-
-        $_SESSION['mensajeProducto'] = "Producto agregado correctamente";
-        $_SESSION['tipoProducto'] = "success";
-
-        header("Location: index.php");
-        exit();
-
-      } else {
-        echo "Error al insertar producto: " . $stmt->error;
-      }
-    }
-  } else {
-    echo "Faltan datos obligatorios del producto";
-  }
-}
-
-// ================== INSERTAR PROVEEDOR ==================
-if (isset($_POST['form_proveedor'])) {
-
-  $nombre = $_POST['NOMBRE'] ?? '';
-  $telefono = $_POST['TELEFONO'] ?? '';
-  $correo = $_POST['CORREO'] ?? '';
-  $estado = $_POST['ESTADO'] ?? 'activo';
-
-  if (!empty($nombre)) {
-
-    $stmt = $conn->prepare("
-        INSERT INTO proveedores (NOMBRE, TELEFONO, CORREO, ESTADO, FECHA_REGISTRO)
-        VALUES (?, ?, ?, ?, NOW())
-      ");
-
-    $stmt->bind_param("ssss", $nombre, $telefono, $correo, $estado);
-
-    if ($stmt->execute()) {
-      $_SESSION['mensajeProveedor'] = "Proveedor agregado correctamente";
-      $_SESSION['tipoProveedor'] = "success";
-      header("Location: index.php");
-      exit();
-    } else {
       $_SESSION['mensaje'] = $e->getMessage();
       $_SESSION['tipo'] = "danger";
-      header("Location: index.php");
-      exit();
     }
 
-  } else {
-    echo "El nombre es obligatorio";
-  }
-}
-
-if (isset($_POST['form_editar_producto'])) {
-
-  $id = $_POST['PRODUCTO_ID'];
-  $nombre = $_POST['NOMBRE'];
-  $precio = $_POST['PRECIO'];
-  $marca = $_POST['MARCA_ID'];
-  $categoria = $_POST['CATEGORIA_ID'];
-  $proveedor = $_POST['PROVEEDOR_ID'];
-  $lote = $_POST['LOTE_ID'];
-
-  // ================== VALIDAR MOVIMIENTOS ==================
-  $check = $conn->prepare("
-    SELECT COUNT(*) AS total
-    FROM movimientos
-    WHERE PRODUCTO_ID = ? AND TIPO_ID <> 3
-  ");
-
-  $check->bind_param("i", $id);
-  $check->execute();
-  $res = $check->get_result()->fetch_assoc();
-
-  if ($res['total'] > 0) {
-    $_SESSION['mensajeProducto'] = "No se puede editar: el producto ya tiene movimientos";
-    $_SESSION['tipoProducto'] = "danger";
     header("Location: index.php");
     exit();
   }
 
-  // ================== ACTUALIZAR PRODUCTO ==================
-  $stmt = $conn->prepare("
+  $stockBajo = $conn->query("
+    SELECT p.NOMBRE, s.UNIDADES
+    FROM stock s
+    INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE s.UNIDADES <= 50
+  ");
+
+  $productosBajoStock = [];
+  while ($row = $stockBajo->fetch_assoc()) {
+    $productosBajoStock[] = $row['NOMBRE'] . " (" . $row['UNIDADES'] . ")";
+  }
+
+  // ================== VALIDAR SESIÓN ==================
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+    header("Location: login.php");
+    exit;
+  }
+
+  $rol = $_SESSION['ROL'];
+
+  // ================== INSERTAR PRODUCTO ==================
+  if (isset($_POST['form_producto'])) {
+
+    $CODIGO_BARRAS = $_POST["CODIGO_BARRAS"] ?? null;
+    $SKU = $_POST["SKU"] ?? null;
+    $NOMBRE = $_POST["NOMBRE"] ?? null;
+    $DESCRIPCION = $_POST["DESCRIPCION"] ?? null;
+    $PRECIO = $_POST["PRECIO"] ?? 0;
+    $LOTE_ID = $_POST["LOTE_ID"] ?? null;
+    $MARCA_ID = $_POST["MARCA_ID"] ?? null;
+    $nuevaMarca = $_POST['nuevaMarca'] ?? '';
+    $CATEGORIA_ID = $_POST["CATEGORIA_ID"] ?? null;
+    $PROVEEDOR_ID = $_POST["PROVEEDOR_ID"] ?? null;
+    date_default_timezone_set("America/Cancun");
+    $FECHA_REGISTRO = date("Y-m-d H:i:s");
+
+    // Validación básica
+    if ($CODIGO_BARRAS && $NOMBRE && $PRECIO) {
+
+      // Validación de lo duplicado
+      $check = $conn->prepare("SELECT PRODUCTO_ID FROM productos WHERE CODIGO_BARRAS = ?");
+      $check->bind_param("s", $CODIGO_BARRAS);
+      $check->execute();
+      $resultado = $check->get_result();
+
+      if ($resultado->num_rows > 0) {
+        echo "<script>alert('Este código de barras ya está registrado');</script>";
+      } else {
+
+        // ================== VALIDAR / CREAR MARCA ==================
+        $nuevaMarca = $_POST['nuevaMarca'] ?? '';
+        if ($MARCA_ID === "nueva") {
+
+          if (!empty($nuevaMarca)) {
+
+            // Buscar si ya existe
+            $checkMarca = $conn->prepare("SELECT MARCA_ID FROM marcas WHERE NOMBRE = ?");
+            $checkMarca->bind_param("s", $nuevaMarca);
+            $checkMarca->execute();
+            $resMarca = $checkMarca->get_result();
+
+            if ($resMarca->num_rows > 0) {
+              $MARCA_ID = $resMarca->fetch_assoc()['MARCA_ID'];
+            } else {
+              $insertMarca = $conn->prepare("INSERT INTO marcas (NOMBRE, FECHA_REGISTRO) VALUES (?, NOW())");
+              $insertMarca->bind_param("s", $nuevaMarca);
+
+              if (!$insertMarca->execute()) {
+                die("Error al insertar marca: " . $insertMarca->error);
+              }
+
+              $MARCA_ID = $conn->insert_id;
+            }
+
+          } else {
+            die("Debes escribir el nombre de la nueva marca");
+          }
+        }
+
+        $stmt = $conn->prepare("
+          INSERT INTO productos 
+          (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->bind_param(
+          "ssssdsiiii",
+          $CODIGO_BARRAS,
+          $SKU,
+          $NOMBRE,
+          $DESCRIPCION,
+          $PRECIO,
+          $FECHA_REGISTRO,
+          $LOTE_ID,
+          $MARCA_ID,
+          $CATEGORIA_ID,
+          $PROVEEDOR_ID
+        );
+
+        if ($stmt->execute()) {
+
+          $producto_id = $conn->insert_id;
+
+          $fecha = $FECHA_REGISTRO;
+          $cantidad = 0; // no aplica
+          $tipo = 3; // alta de producto
+          $id_usuario = $_SESSION['ID_USUARIO'];
+          $proveedor_id = $PROVEEDOR_ID;
+          $almacen_id = null; // no aplica
+
+          $mov = $conn->prepare("
+            INSERT INTO movimientos 
+            (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          ");
+
+          $mov->bind_param(
+            "siiiiii",
+            $fecha,
+            $cantidad,
+            $tipo,
+            $id_usuario,
+            $proveedor_id,
+            $producto_id,
+            $almacen_id
+          );
+
+          if (!$mov->execute()) {
+            echo "Error al registrar movimiento: " . $mov->error;
+            exit();
+          }
+
+          $_SESSION['mensajeProducto'] = "Producto agregado correctamente";
+          $_SESSION['tipoProducto'] = "success";
+
+          header("Location: index.php");
+          exit();
+
+        } else {
+          echo "Error al insertar producto: " . $stmt->error;
+        }
+      }
+    } else {
+      echo "Faltan datos obligatorios del producto";
+    }
+  }
+
+  // ================== INSERTAR PROVEEDOR ==================
+  if (isset($_POST['form_proveedor'])) {
+
+    $nombre = $_POST['NOMBRE'] ?? '';
+    $telefono = $_POST['TELEFONO'] ?? '';
+    $correo = $_POST['CORREO'] ?? '';
+    $estado = $_POST['ESTADO'] ?? 'activo';
+
+    if (!empty($nombre)) {
+
+      $stmt = $conn->prepare("
+        INSERT INTO proveedores (NOMBRE, TELEFONO, CORREO, ESTADO, FECHA_REGISTRO)
+        VALUES (?, ?, ?, ?, NOW())
+      ");
+
+      $stmt->bind_param("ssss", $nombre, $telefono, $correo, $estado);
+
+      if ($stmt->execute()) {
+        $_SESSION['mensajeProveedor'] = "Proveedor agregado correctamente";
+        $_SESSION['tipoProveedor'] = "success";
+        header("Location: index.php");
+        exit();
+      } else {
+        $_SESSION['mensaje'] = $e->getMessage();
+        $_SESSION['tipo'] = "danger";
+        header("Location: index.php");
+        exit();
+      }
+
+    } else {
+      echo "El nombre es obligatorio";
+    }
+  }
+
+  //================== EDITAR PRODUCTO ==================
+  if (isset($_POST['form_editar_producto'])) {
+
+    $id = $_POST['PRODUCTO_ID'];
+    $nombre = $_POST['NOMBRE'];
+    $precio = $_POST['PRECIO'];
+    $marca = $_POST['MARCA_ID'];
+    $categoria = $_POST['CATEGORIA_ID'];
+    $proveedor = $_POST['PROVEEDOR_ID'];
+    $lote = $_POST['LOTE_ID'];
+
+    // ================== VALIDAR MOVIMIENTOS ==================
+    $check = $conn->prepare("
+      SELECT COUNT(*) AS total
+      FROM movimientos
+      WHERE PRODUCTO_ID = ? AND TIPO_ID <> 3
+    ");
+
+    $check->bind_param("i", $id);
+    $check->execute();
+    $res = $check->get_result()->fetch_assoc();
+
+    if ($res['total'] > 0) {
+      $_SESSION['mensajeProducto'] = "No se puede editar: el producto ya tiene movimientos";
+      $_SESSION['tipoProducto'] = "danger";
+      header("Location: index.php");
+      exit();
+    }
+
+    // ================== ACTUALIZAR PRODUCTO ==================
+    $stmt = $conn->prepare("
       UPDATE productos SET 
       NOMBRE = ?, 
       PRECIO = ?, 
@@ -228,177 +241,177 @@ if (isset($_POST['form_editar_producto'])) {
       PROVEEDOR_ID = ?, 
       LOTE_ID = ?
       WHERE PRODUCTO_ID = ?
-  ");
-
-  $stmt->bind_param(
-    "sdiiiii",
-    $nombre,
-    $precio,
-    $marca,
-    $categoria,
-    $proveedor,
-    $lote,
-    $id
-  );
-
-  if ($stmt->execute()) {
-
-    // ================== REGISTRAR MOVIMIENTO (EDICIÓN) ==================
-    $fecha = date("Y-m-d H:i:s");
-    $tipo = 5;
-    $cantidad = 0;
-    $usuario = $_SESSION['ID_USUARIO'];
-
-    $mov = $conn->prepare("
-      INSERT INTO movimientos
-      (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID)
-      VALUES (?, ?, ?, ?, ?, ?)
     ");
 
-    $mov->bind_param(
-      "siiiii",
-      $fecha,
-      $cantidad,
-      $tipo,
-      $usuario,
+    $stmt->bind_param(
+      "sdiiiii",
+      $nombre,
+      $precio,
+      $marca,
+      $categoria,
       $proveedor,
+      $lote,
       $id
     );
 
-    $mov->execute();
+    if ($stmt->execute()) {
 
-    $_SESSION['mensajeProducto'] = "Producto actualizado correctamente";
-    $_SESSION['tipoProducto'] = "success";
+      // ================== REGISTRAR MOVIMIENTO (EDICIÓN) ==================
+      $fecha = date("Y-m-d H:i:s");
+      $tipo = 5;
+      $cantidad = 0;
+      $usuario = $_SESSION['ID_USUARIO'];
 
-    header("Location: index.php");
-    exit();
+      $mov = $conn->prepare("
+        INSERT INTO movimientos
+        (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID)
+        VALUES (?, ?, ?, ?, ?, ?)
+      ");
 
-  } else {
-    echo "Error al actualizar producto: " . $stmt->error;
+      $mov->bind_param(
+        "siiiii",
+        $fecha,
+        $cantidad,
+        $tipo,
+        $usuario,
+        $proveedor,
+        $id
+      );
+
+      $mov->execute();
+
+      $_SESSION['mensajeProducto'] = "Producto actualizado correctamente";
+      $_SESSION['tipoProducto'] = "success";
+
+      header("Location: index.php");
+      exit();
+
+    } else {
+      echo "Error al actualizar producto: " . $stmt->error;
+    }
   }
-}
 
-// ================== INSERTAR USUARIO ==================
-if (isset($_POST['form_usuario'])) {
+  // ================== INSERTAR USUARIO ==================
+  if (isset($_POST['form_usuario'])) {
 
-  $nombre = trim($_POST['NOMBRE'] ?? '');
-  $apellido_p = trim($_POST['APELLIDO_P'] ?? '');
-  $apellido_m = trim($_POST['APELLIDO_M'] ?? '');
-  $correo = trim($_POST['CORREO'] ?? '');
-  $telefono = trim($_POST['TELEFONO'] ?? '');
-  $estado = $_POST['ESTADO'] ?? 'activo';
-  $contraseña = $_POST['CONTRASEÑA'] ?? '';
-  $rol_user = $_POST['ROL'] ?? 'empleado';
+    $nombre = trim($_POST['NOMBRE'] ?? '');
+    $apellido_p = trim($_POST['APELLIDO_P'] ?? '');
+    $apellido_m = trim($_POST['APELLIDO_M'] ?? '');
+    $correo = trim($_POST['CORREO'] ?? '');
+    $telefono = trim($_POST['TELEFONO'] ?? '');
+    $estado = $_POST['ESTADO'] ?? 'activo';
+    $contraseña = $_POST['CONTRASEÑA'] ?? '';
+    $rol_user = $_POST['ROL'] ?? 'empleado';
 
-  if (!empty($nombre) && !empty($apellido_p) && !empty($correo) && !empty($contraseña)) {
+    if (!empty($nombre) && !empty($apellido_p) && !empty($correo) && !empty($contraseña)) {
 
-    // ENCRIPTAR CONTRASEÑA
-    $hash = password_hash($contraseña, PASSWORD_DEFAULT);
+      // ENCRIPTAR CONTRASEÑA
+      $hash = password_hash($contraseña, PASSWORD_DEFAULT);
 
-    // INSERT CORRECTO
-    $stmt = $conn->prepare("
+      // INSERT CORRECTO
+      $stmt = $conn->prepare("
         INSERT INTO usuarios 
         (NOMBRE, APELLIDO_P, APELLIDO_M, CORREO, CONTRASEÑA, ROL, ESTADO) 
         VALUES (?, ?, ?, ?, ?, ?, ?)
       ");
 
-    if (!$stmt) {
-      die("Error en prepare: " . $conn->error);
-    }
+      if (!$stmt) {
+        die("Error en prepare: " . $conn->error);
+      }
 
-    $stmt->bind_param(
-      "sssssss",
-      $nombre,
-      $apellido_p,
-      $apellido_m,
-      $correo,
-      $hash,
-      $rol_user,
-      $estado
-    );
+      $stmt->bind_param(
+        "sssssss",
+        $nombre,
+        $apellido_p,
+        $apellido_m,
+        $correo,
+        $hash,
+        $rol_user,
+        $estado
+      );
 
-    if ($stmt->execute()) {
-      echo "<script>
+      if ($stmt->execute()) {
+        echo "<script>
           alert('Usuario registrado correctamente');
           window.location='index.php';
         </script>";
-      exit();
+        exit();
+      } else {
+        echo "Error al insertar usuario: " . $stmt->error;
+      }
+
     } else {
-      echo "Error al insertar usuario: " . $stmt->error;
+      echo "Faltan campos obligatorios del usuario";
+    }
+  }
+
+  // ================== PAGINACIÓN ==================
+    $registros_por_pagina = 10;
+
+    // USUARIOS
+    $pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
+    if ($pagina < 1)
+    $pagina = 1;
+
+    $offset = ($pagina - 1) * $registros_por_pagina;
+
+    $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
+    $total_paginas = ceil($total_usuarios / $registros_por_pagina);
+
+    $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
+    $total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
+
+    // PRODUCTOS
+    $pagina_productos = isset($_GET['pagina_productos']) ? (int) $_GET['pagina_productos'] : 1;
+    if ($pagina_productos < 1)
+    $pagina_productos = 1;
+
+    $offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
+
+    $total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
+    $total_paginas_productos = ceil($total_productos / $registros_por_pagina);
+
+    $total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
+    $total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
+
+    // PAGINACIÓN STOCK
+    $registros_por_pagina_stock = 10;
+
+    $pagina_stock = isset($_GET['pagina_stock']) ? (int) $_GET['pagina_stock'] : 1;
+    if ($pagina_stock < 1)
+    $pagina_stock = 1;
+
+    $offset_stock = ($pagina_stock - 1) * $registros_por_pagina_stock;
+
+    $total_stock = $conn->query("SELECT COUNT(*) as total FROM stock")->fetch_assoc()['total'];
+    $total_paginas_stock = ceil($total_stock / $registros_por_pagina_stock);
+
+    // PAGINACIÓN MOVIMIENTOS
+    $registros_por_pagina_mov = 10;
+
+    $pagina_mov = isset($_GET['pagina_mov']) ? (int) $_GET['pagina_mov'] : 1;
+    if ($pagina_mov < 1)
+    $pagina_mov = 1;
+
+    $offset_mov = ($pagina_mov - 1) * $registros_por_pagina_mov;
+
+    $total_mov = $conn->query("SELECT COUNT(*) as total FROM movimientos")->fetch_assoc()['total'];
+    $total_paginas_mov = ceil($total_mov / $registros_por_pagina_mov);
+  // ================== FIN PAGINACIÓN ==================
+
+  // ================== BUSCADOR DE STOCK ==================
+  if (isset($_GET['ajax']) && $_GET['ajax'] == 'stock') {
+
+    header('Content-Type: application/json');
+
+    $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
+
+    if ($q == "") {
+      echo json_encode([]);
+      exit;
     }
 
-  } else {
-    echo "Faltan campos obligatorios del usuario";
-  }
-}
-
-// ================== PAGINACIÓN ==================
-$registros_por_pagina = 10;
-
-// USUARIOS
-$pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
-if ($pagina < 1)
-  $pagina = 1;
-
-$offset = ($pagina - 1) * $registros_por_pagina;
-
-$total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
-$total_paginas = ceil($total_usuarios / $registros_por_pagina);
-
-$total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
-$total_activos = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ESTADO = 'activo'")->fetch_assoc()['total'];
-
-// PRODUCTOS
-$pagina_productos = isset($_GET['pagina_productos']) ? (int) $_GET['pagina_productos'] : 1;
-if ($pagina_productos < 1)
-  $pagina_productos = 1;
-
-$offset_productos = ($pagina_productos - 1) * $registros_por_pagina;
-
-$total_productos = $conn->query("SELECT COUNT(*) as total FROM productos")->fetch_assoc()['total'];
-$total_paginas_productos = ceil($total_productos / $registros_por_pagina);
-
-$total_marcas = $conn->query("SELECT COUNT(*) as total FROM marcas")->fetch_assoc()['total'];
-$total_proveedores = $conn->query("SELECT COUNT(*) as total FROM proveedores")->fetch_assoc()['total'];
-
-// PAGINACIÓN STOCK
-$registros_por_pagina_stock = 10;
-
-$pagina_stock = isset($_GET['pagina_stock']) ? (int) $_GET['pagina_stock'] : 1;
-if ($pagina_stock < 1)
-  $pagina_stock = 1;
-
-$offset_stock = ($pagina_stock - 1) * $registros_por_pagina_stock;
-
-$total_stock = $conn->query("SELECT COUNT(*) as total FROM stock")->fetch_assoc()['total'];
-$total_paginas_stock = ceil($total_stock / $registros_por_pagina_stock);
-
-// PAGINACIÓN MOVIMIENTOS
-$registros_por_pagina_mov = 10;
-
-$pagina_mov = isset($_GET['pagina_mov']) ? (int) $_GET['pagina_mov'] : 1;
-if ($pagina_mov < 1)
-  $pagina_mov = 1;
-
-$offset_mov = ($pagina_mov - 1) * $registros_por_pagina_mov;
-
-$total_mov = $conn->query("SELECT COUNT(*) as total FROM movimientos")->fetch_assoc()['total'];
-$total_paginas_mov = ceil($total_mov / $registros_por_pagina_mov);
-// ================== FIN PAGINACIÓN ==================
-
-// ================== BUSCADOR DE STOCK ==================
-if (isset($_GET['ajax']) && $_GET['ajax'] == 'stock') {
-
-  header('Content-Type: application/json');
-
-  $q = isset($_GET['q']) ? $conn->real_escape_string($_GET['q']) : "";
-
-  if ($q == "") {
-    echo json_encode([]);
-    exit;
-  }
-
-  $sql = "
+    $sql = "
       SELECT 
         p.NOMBRE,
         p.CODIGO_BARRAS,
@@ -422,22 +435,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 'stock') {
       m.NOMBRE LIKE '%$q%'
     ";
 
-  $result = $conn->query($sql);
+    $result = $conn->query($sql);
 
-  $data = [];
+    $data = [];
 
-  while ($row = $result->fetch_assoc()) {
-    $data[] = $row;
+    while ($row = $result->fetch_assoc()) {
+      $data[] = $row;
+    }
+
+    echo json_encode($data);
+    exit;
   }
 
-  echo json_encode($data);
-  exit;
-}
+  // ================== CONSULTAS ==================
+    $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
 
-// ================== CONSULTAS ==================
-$usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
-
-$productos = $conn->query("
+    $productos = $conn->query("
       SELECT 
         p.*, 
         m.NOMBRE AS MARCA, 
@@ -447,17 +460,16 @@ $productos = $conn->query("
       LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
       LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
       LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
-            WHERE p.ESTADO = 1
-
+      WHERE p.ESTADO = 1
       LIMIT $offset_productos, $registros_por_pagina
     ")->fetch_all(MYSQLI_ASSOC);
 
-$lotes = $conn->query("SELECT LOTE_ID FROM lotes");
-$marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
-$categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
-$proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
+    $lotes = $conn->query("SELECT LOTE_ID FROM lotes");
+    $marcas = $conn->query("SELECT MARCA_ID, NOMBRE FROM marcas");
+    $categorias = $conn->query("SELECT CATEGORIA_ID, NOMBRE FROM categorias");
+    $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores");
 
-$stock = $conn->query("
+    $stock = $conn->query("
       SELECT 
         p.NOMBRE,
         p.CODIGO_BARRAS,
@@ -469,7 +481,6 @@ $stock = $conn->query("
         u.NIVEL,
         u.SECCION,
         s.UNIDADES
-
       FROM stock s
       INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
       LEFT JOIN marcas m ON p.MARCA_ID = m.MARCA_ID
@@ -479,7 +490,7 @@ $stock = $conn->query("
       LIMIT $offset_stock, $registros_por_pagina_stock
     ");
 
-$movimientos = $conn->query("
+    $movimientos = $conn->query("
       SELECT 
         m.ID_MOVIMIENTO,
         m.FECHA_REGISTRO,
@@ -497,286 +508,116 @@ $movimientos = $conn->query("
       ORDER BY m.ID_MOVIMIENTO DESC
       LIMIT $offset_mov, $registros_por_pagina_mov
     ");
-// ================== FIN DE CONSULTAS ==================
+  // ================== FIN DE CONSULTAS ==================
 
-#TOKEN PARA CONOCER MOVIMIENTOS
+  #TOKEN PARA CONOCER MOVIMIENTOS
 ?>
 
 <html lang="es">
 
-<head>
-  <meta charset="UTF-8">
-  <title>Panel Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="CSS/index.css">
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <title>Panel Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="CSS/index.css">
+  </head>
 
-<body>
+  <body>
 
-  <?php include 'include/navbar.php'; ?>
+    <?php include 'include/navbar.php'; ?>
 
-  <div class="container mt-4">
+    <div class="container mt-4">
+      <!-- BIENVENIDA -->
+      <div class="mb-4">
+        <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
+        <p class="text-muted">Panel de administración</p>
+      </div>
 
-    <!-- BIENVENIDA -->
-
-    <div class="mb-4">
-
-      <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
-      <p class="text-muted">Panel de administración</p>
-
-    </div>
-
-    <!-- CARDS -->
-    <div class="row g-4 mb-4">
-      <?php if ($rol == 'admin'): ?>
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Total Usuarios</h5>
-              <h2><?= $total_usuarios; ?></h2>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Admins</h5>
-              <h2><?= $total_admins; ?></h2>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Activos</h5>
-              <h2 class="text-success"><?= $total_activos; ?></h2>
-            </div>
-          </div>
-        </div>
-
-      <?php else: ?>
-
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Total Productos</h5>
-              <h2><?= $total_productos; ?></h2>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Marcas</h5>
-              <h2><?= $total_marcas; ?></h2>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="card dashboard-card shadow-sm">
-            <div class="card-body">
-              <h5>Proveedores</h5>
-              <h2><?= $total_proveedores; ?></h2>
-            </div>
-          </div>
-        </div>
-
-      <?php endif; ?>
-    </div>
-
-    <!-- TABLAS DE USUARIOS / PRODUCTOS -->
-    <div class="card shadow-sm p-4">
-      <!-- GESTIÓN DE USUARIOS -->
-      <?php if ($rol == 'admin'): ?>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Usuarios</h4>
-
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalUsuario">
-            Registrar usuario
-          </button>
-
-          <!--Modal de registro de usuarios-->
-          <div class="modal fade" id="modalUsuario" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-              <div class="modal-content modal-producto">
-
-                <form method="POST">
-                  <input type="hidden" name="form_usuario" value="1">
-
-                  <div class="modal-header">
-                    <h5 class="modal-title">
-                      Agregar usuario
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                  </div>
-
-                  <div class="modal-body">
-
-                    <div class="row">
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="NOMBRE" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Apellido paterno</label>
-                        <input type="text" name="APELLIDO_P" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Apellido materno</label>
-                        <input type="text" name="APELLIDO_M" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">Correo</label>
-                        <input type="email" name="CORREO" class="form-control input-pro" required>
-                      </div>
-
-                      <div class="col-12 mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input type="text" name="CONTRASEÑA" class="form-control input-pro">
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label>Rol usuario</label>
-                        <select name="ROL" class="form-control">
-                          <option value="empleado">Empleado</option>
-                          <option value="admin">Administrador</option>
-                        </select>
-                      </div>
-
-                      <div class="col-md-6 mb-3">
-                        <label>Estado empleado</label>
-                        <select name="ESTADO" class="form-control">
-                          <option value="activo">Activo</option>
-                          <option value="inactivo">Inactivo</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="modal-footer">
-                    <button type="submit" class="btn ms-2 btn-success"
-                      style="border-radius:10px; padding:8px 20px; font-weight:600;">
-                      Guardar
-                    </button>
-                    <button type="button" class="btn ms-2 btn-danger"
-                      style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-
+      <!-- CARDS -->
+      <div class="row g-4 mb-4">
+        <?php if ($rol == 'admin'): ?>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Usuarios</h5>
+                <h2><?= $total_usuarios; ?></h2>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- BUSCADOR -->
-        <input type="search" id="buscadorUsuario" class="form-control mb-3" placeholder="Buscar usuario...">
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Admins</h5>
+                <h2><?= $total_admins; ?></h2>
+              </div>
+            </div>
+          </div>
 
-        <!-- TABLA USUARIOS-->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Activos</h5>
+                <h2 class="text-success"><?= $total_activos; ?></h2>
+              </div>
+            </div>
+          </div>
 
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Apellido Paterno</th>
-                <th>Apellido Materno</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
+        <?php else: ?>
 
-            <tbody id="tbodyUsuarios">
-              <?php $contador = $offset + 1; ?>
-              <?php foreach ($usuarios as $u): ?>
-                <tr>
-                  <td><?= $contador++; ?></td>
-                  <td><?= $u['NOMBRE']; ?></td>
-                  <td><?= $u['APELLIDO_P']; ?></td>
-                  <td><?= $u['APELLIDO_M']; ?></td>
-                  <td><?= $u['CORREO']; ?></td>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Total Productos</h5>
+                <h2><?= $total_productos; ?></h2>
+              </div>
+            </div>
+          </div>
 
-                  <td>
-                    <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
-                      <?= $u['ROL']; ?>
-                    </span>
-                  </td>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Marcas</h5>
+                <h2><?= $total_marcas; ?></h2>
+              </div>
+            </div>
+          </div>
 
-                  <td>
-                    <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
-                      <?= $u['ESTADO']; ?>
-                    </span>
-                  </td>
+          <div class="col-md-4">
+            <div class="card dashboard-card shadow-sm">
+              <div class="card-body">
+                <h5>Proveedores</h5>
+                <h2><?= $total_proveedores; ?></h2>
+              </div>
+            </div>
+          </div>
 
-                  <td class="text-center">
+        <?php endif; ?>
+      </div>
 
-                    <button class="btn btn-sm btn-warning"
-                      onclick="window.location.href='Admin/editarPerfilUsuarios.php?id=<?= $u['ID_USUARIO']; ?>'">
-                      <i class="bi bi-pencil"></i>
-                    </button>
+      <!-- TABLAS DE USUARIOS / PRODUCTOS -->
+      <div class="card shadow-sm p-4">
+        <!-- GESTIÓN DE USUARIOS -->
+        <?php if ($rol == 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Usuarios</h4>
 
-                    <button class="btn btn-sm btn-danger"
-                      onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-          <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina <= 1) ? 'disabled' : '' ?>" href="?pagina=<?= $pagina - 1 ?>">
-              &lt;
-            </a>
-
-            <span class="fw-bold"><?= $pagina ?></span>
-
-            <a class="btn btn-light <?= ($pagina >= $total_paginas) ? 'disabled' : '' ?>"
-              href="?pagina=<?= $pagina + 1 ?>">
-              &gt;
-            </a>
-          </nav>
-        </div>
-      <?php endif; ?>
-
-      <!-- GESTIÓN DE PRODUCTOS -->
-      <?php if ($rol != 'admin'): ?>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Productos</h4>
-          <div class="d-flex gap-2">
-
-            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProveedor">
-              Registrar Proveedor
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+              Registrar usuario
             </button>
 
-            <?php include "modalProveedor.php"; ?>
-
-            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
-              Registrar producto
-            </button>
-
-            <!--MODAL REGISTRO DE PRODUCTO -->
-            <div class="modal fade" id="modalProducto" tabindex="-1">
+            <!--Modal de registro de usuarios-->
+            <div class="modal fade" id="modalUsuario" tabindex="-1">
               <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content modal-producto">
+
                   <form method="POST">
-                    <input type="hidden" name="form_producto" value="1">
+                    <input type="hidden" name="form_usuario" value="1">
+
                     <div class="modal-header">
                       <h5 class="modal-title">
-                        Agregar producto
+                        Agregar usuario
                       </h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
@@ -786,81 +627,46 @@ $movimientos = $conn->query("
                       <div class="row">
 
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Código de barras</label>
-                          <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">SKU</label>
-                          <input type="text" name="SKU" class="form-control input-pro">
-                        </div>
-
-                        <div class="col-md-6 mb-3">
                           <label class="form-label">Nombre</label>
                           <input type="text" name="NOMBRE" class="form-control input-pro" required>
                         </div>
 
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Precio</label>
-                          <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
+                          <label class="form-label">Apellido paterno</label>
+                          <input type="text" name="APELLIDO_P" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Apellido materno</label>
+                          <input type="text" name="APELLIDO_M" class="form-control input-pro" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Correo</label>
+                          <input type="email" name="CORREO" class="form-control input-pro" required>
                         </div>
 
                         <div class="col-12 mb-3">
-                          <label class="form-label">Descripción</label>
-                          <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                          <label class="form-label">Contraseña</label>
+                          <input type="text" name="CONTRASEÑA" class="form-control input-pro">
                         </div>
 
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Categoría</label>
-                          <select name="CATEGORIA_ID" id="categoria" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($c = $categorias->fetch_assoc()): ?>
-                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
+                          <label>Rol usuario</label>
+                          <select name="ROL" class="form-control">
+                            <option value="empleado">Empleado</option>
+                            <option value="admin">Administrador</option>
                           </select>
                         </div>
 
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Lote</label>
-                          <select name="LOTE_ID" id="lote" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($l = $lotes->fetch_assoc()): ?>
-                              <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
-                            <?php endwhile; ?>
+                          <label>Estado empleado</label>
+                          <select name="ESTADO" class="form-control">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
                           </select>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Marca</label>
-                          <select name="MARCA_ID" id="marca" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-
-                            <?php while ($m = $marcas->fetch_assoc()): ?>
-                              <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-
-                            <option value="nueva">Agregar nueva marca</option>
-                          </select>
-                          <div class="mt-2" id="contenedorNuevaMarca" style="display:none;">
-                            <input type="text" name="nuevaMarca" id="nuevaMarca" class="form-control input-pro"
-                              placeholder="Escribe la nueva marca">
-                          </div>
-                        </div>
-
-
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Proveedor</label>
-                          <select name="PROVEEDOR_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona</option>
-                            <?php while ($p = $proveedores->fetch_assoc()): ?>
-                              <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
-
                       </div>
-
                     </div>
 
                     <div class="modal-footer">
@@ -874,522 +680,722 @@ $movimientos = $conn->query("
                       </button>
                     </div>
                   </form>
+
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- BUSCADOR -->
-        <input type="search" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
+          <!-- BUSCADOR -->
+          <input type="search" id="buscadorUsuario" class="form-control mb-3" placeholder="Buscar usuario...">
 
-        <!--MENSAJE PRODUCTO--->
-      <?php if (isset($_SESSION['mensajeProducto'])): ?>
-      <div class="alert alert-<?= $_SESSION['tipoProducto']; ?>">
-        <?= $_SESSION['mensajeProducto']; ?>
-      </div>
-      <?php unset($_SESSION['mensajeProducto'], $_SESSION['tipoProducto']); ?>
-      <?php endif; ?>
-      <!--Mensaje proveedor-->
-        <?php if (isset($_SESSION['mensajeProveedor'])): ?>
-          <div class="alert alert-<?= $_SESSION['tipoProveedor']; ?>">
-            <?= $_SESSION['mensajeProveedor']; ?>
+          <!-- TABLA USUARIOS-->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Apellido Paterno</th>
+                  <th>Apellido Materno</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody id="tbodyUsuarios">
+                <?php $contador = $offset + 1; ?>
+                <?php foreach ($usuarios as $u): ?>
+                  <tr>
+                    <td><?= $contador++; ?></td>
+                    <td><?= $u['NOMBRE']; ?></td>
+                    <td><?= $u['APELLIDO_P']; ?></td>
+                    <td><?= $u['APELLIDO_M']; ?></td>
+                    <td><?= $u['CORREO']; ?></td>
+
+                    <td>
+                      <span class="badge <?= $u['ROL'] == 'admin' ? 'bg-primary' : 'bg-secondary'; ?>">
+                        <?= $u['ROL']; ?>
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="badge <?= $u['ESTADO'] == 'activo' ? 'bg-success' : 'bg-danger'; ?>">
+                        <?= $u['ESTADO']; ?>
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+
+                      <button class="btn btn-sm btn-warning"
+                        onclick="window.location.href='Admin/editarPerfilUsuarios.php?id=<?= $u['ID_USUARIO']; ?>'">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-danger"
+                        onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=<?= $u['ID_USUARIO']; ?>'; }">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina <= 1) ? 'disabled' : '' ?>" href="?pagina=<?= $pagina - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina ?></span>
+
+              <a class="btn btn-light <?= ($pagina >= $total_paginas) ? 'disabled' : '' ?>"
+                href="?pagina=<?= $pagina + 1 ?>">
+                &gt;
+              </a>
+            </nav>
           </div>
-          <?php unset($_SESSION['mensajeProveedor'], $_SESSION['tipoProveedor']); ?>
         <?php endif; ?>
-        <div id="resultado"></div>
 
-        <!--TABLA PRODUCTOS -->
-        <div class="table-responsive" id="tablaProductos">
-          <table class="table table-hover align-middle">
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Código de barras</th>
-                <th>SKU</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Fecha de registro</th>
-                <th>Lote</th>
-                <th>Marca</th>
-                <th>Categoría</th>
-                <th>Proveedor</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
+        <!-- GESTIÓN DE PRODUCTOS -->
+        <?php if ($rol != 'admin'): ?>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Productos</h4>
+            <div class="d-flex gap-2">
 
-            <tbody id="tbodyProductos">
-              <?php $contador = $offset_productos + 1; ?>
-              <?php foreach ($productos as $p): ?>
-                <tr id="fila-producto-<?= $p['PRODUCTO_ID']; ?>">
-                  <td><?= $contador++; ?></td>
-                  <td><?= $p['CODIGO_BARRAS']; ?></td>
-                  <td><?= $p['SKU']; ?></td>
-                  <td><?= $p['NOMBRE']; ?></td>
-                  <td><?= $p['DESCRIPCION']; ?></td>
-                  <td><?= $p['PRECIO']; ?></td>
-                  <td><?= $p['FECHA_REGISTRO']; ?></td>
-                  <td><?= $p['LOTE_ID']; ?></td>
-                  <td><?= $p['MARCA']; ?></td>
-                  <td><?= $p['CATEGORIA']; ?></td>
-                  <td><?= $p['PROVEEDOR']; ?></td>
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProveedor">
+                Registrar Proveedor
+              </button>
 
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <div class="modal fade" id="modalEditarProducto" tabindex="-1">
-                      <div class="modal-dialog modal-lg modal-dialog-centered">
-                        <div class="modal-content">
-                          <form method="POST">
-                            <input type="hidden" name="form_editar_producto" value="1">
-                            <input type="hidden" name="PRODUCTO_ID" id="edit_id">
+              <?php include "modalProveedor.php"; ?>
 
-                            <div class="modal-header">
-                              <h5 class="modal-title">Editar producto</h5>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalProducto">
+                Registrar producto
+              </button>
+
+              <!--MODAL REGISTRO DE PRODUCTO -->
+              <div class="modal fade" id="modalProducto" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content modal-producto">
+                    <form method="POST">
+                      <input type="hidden" name="form_producto" value="1">
+                      <div class="modal-header">
+                        <h5 class="modal-title">
+                          Agregar producto
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+
+                      <div class="modal-body">
+
+                        <div class="row">
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Código de barras</label>
+                            <input type="text" name="CODIGO_BARRAS" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">SKU</label>
+                            <input type="text" name="SKU" class="form-control input-pro">
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="NOMBRE" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
+                          </div>
+
+                          <div class="col-12 mb-3">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="DESCRIPCION" class="form-control input-pro">
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <select name="CATEGORIA_ID" id="categoria" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($c = $categorias->fetch_assoc()): ?>
+                                <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Lote</label>
+                            <select name="LOTE_ID" id="lote" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($l = $lotes->fetch_assoc()): ?>
+                                <option value="<?= $l['LOTE_ID'] ?>">Lote <?= $l['LOTE_ID'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Marca</label>
+                            <select name="MARCA_ID" id="marca" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+
+                              <?php while ($m = $marcas->fetch_assoc()): ?>
+                                <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+
+                              <option value="nueva">Agregar nueva marca</option>
+                            </select>
+                            <div class="mt-2" id="contenedorNuevaMarca" style="display:none;">
+                              <input type="text" name="nuevaMarca" id="nuevaMarca" class="form-control input-pro"
+                                placeholder="Escribe la nueva marca">
                             </div>
+                          </div>
 
-                            <div class="modal-body">
-                              <div class="row">
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Nombre</label>
-                                  <input type="text" name="NOMBRE" id="edit_nombre" class="form-control">
-                                </div>
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Precio</label>
-                                  <input type="number" name="PRECIO" id="edit_precio" class="form-control">
-                                </div>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Proveedor</label>
+                            <select name="PROVEEDOR_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona</option>
+                              <?php while ($p = $proveedores->fetch_assoc()): ?>
+                                <option value="<?= $p['PROVEEDOR_ID'] ?>"><?= $p['NOMBRE'] ?></option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Marca</label>
-                                  <select name="MARCA_ID" id="edit_marca" class="form-control">
-                                    <?php foreach ($marcas as $m): ?>
-                                      <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                                    <?php endforeach; ?>
-                                  </select>
-                                </div>
+                        </div>
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Categoría</label>
-                                  <select name="CATEGORIA_ID" id="edit_categoria" class="form-control">
-                                    <?php foreach ($categorias as $c): ?>
-                                      <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                                    <?php endforeach; ?>
-                                  </select>
-                                </div>
+                      </div>
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Proveedor</label>
-                                  <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
-                                    <?php foreach ($proveedores as $p_prov): ?>
-                                      <option value="<?= $p_prov['PROVEEDOR_ID'] ?>"><?= $p_prov['NOMBRE'] ?></option>
-                                    <?php endforeach; ?>
-                                  </select>
-                                </div>
+                      <div class="modal-footer">
+                        <button type="submit" class="btn ms-2 btn-success"
+                          style="border-radius:10px; padding:8px 20px; font-weight:600;">
+                          Guardar
+                        </button>
+                        <button type="button" class="btn ms-2 btn-danger"
+                          style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                                <div class="col-md-6 mb-3">
-                                  <label>Lote</label>
-                                  <select name="LOTE_ID" id="edit_lote" class="form-control">
-                                    <?php foreach ($lotes as $l): ?>
-                                      <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
-                                    <?php endforeach; ?>
-                                  </select>
+          <!-- BUSCADOR -->
+          <input type="search" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
+
+          <!-- MENSAJES -->
+            <!--MENSAJE PRODUCTO--->
+            <?php if (isset($_SESSION['mensajeProducto'])): ?>
+            <div class="alert alert-<?= $_SESSION['tipoProducto']; ?>">
+              <?= $_SESSION['mensajeProducto']; ?>
+            </div>
+            <?php unset($_SESSION['mensajeProducto'], $_SESSION['tipoProducto']); ?>
+            <?php endif; ?>
+            <!--Mensaje proveedor-->
+            <?php if (isset($_SESSION['mensajeProveedor'])): ?>
+              <div class="alert alert-<?= $_SESSION['tipoProveedor']; ?>">
+                <?= $_SESSION['mensajeProveedor']; ?>
+              </div>
+              <?php unset($_SESSION['mensajeProveedor'], $_SESSION['tipoProveedor']); ?>
+            <?php endif; ?>
+            <div id="resultado"></div>
+          <!-- FIN MENSAJES -->
+
+          <!--TABLA PRODUCTOS -->
+          <div class="table-responsive" id="tablaProductos">
+            <table class="table table-hover align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Código de barras</th>
+                  <th>SKU</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Precio</th>
+                  <th>Fecha de registro</th>
+                  <th>Lote</th>
+                  <th>Marca</th>
+                  <th>Categoría</th>
+                  <th>Proveedor</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody id="tbodyProductos">
+                <?php $contador = $offset_productos + 1; ?>
+                <?php foreach ($productos as $p): ?>
+                  <tr id="fila-producto-<?= $p['PRODUCTO_ID']; ?>">
+                    <td><?= $contador++; ?></td>
+                    <td><?= $p['CODIGO_BARRAS']; ?></td>
+                    <td><?= $p['SKU']; ?></td>
+                    <td><?= $p['NOMBRE']; ?></td>
+                    <td><?= $p['DESCRIPCION']; ?></td>
+                    <td><?= $p['PRECIO']; ?></td>
+                    <td><?= $p['FECHA_REGISTRO']; ?></td>
+                    <td><?= $p['LOTE_ID']; ?></td>
+                    <td><?= $p['MARCA']; ?></td>
+                    <td><?= $p['CATEGORIA']; ?></td>
+                    <td><?= $p['PROVEEDOR']; ?></td>
+
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <div class="modal fade" id="modalEditarProducto" tabindex="-1">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                          <div class="modal-content">
+                            <form method="POST">
+                              <input type="hidden" name="form_editar_producto" value="1">
+                              <input type="hidden" name="PRODUCTO_ID" id="edit_id">
+
+                              <div class="modal-header">
+                                <h5 class="modal-title">Editar producto</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+
+                              <div class="modal-body">
+                                <div class="row">
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Nombre</label>
+                                    <input type="text" name="NOMBRE" id="edit_nombre" class="form-control">
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Precio</label>
+                                    <input type="number" name="PRECIO" id="edit_precio" class="form-control">
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Marca</label>
+                                    <select name="MARCA_ID" id="edit_marca" class="form-control">
+                                      <?php foreach ($marcas as $m): ?>
+                                        <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Categoría</label>
+                                    <select name="CATEGORIA_ID" id="edit_categoria" class="form-control">
+                                      <?php foreach ($categorias as $c): ?>
+                                        <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Proveedor</label>
+                                    <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
+                                      <?php foreach ($proveedores as $p_prov): ?>
+                                        <option value="<?= $p_prov['PROVEEDOR_ID'] ?>"><?= $p_prov['NOMBRE'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+
+                                  <div class="col-md-6 mb-3">
+                                    <label>Lote</label>
+                                    <select name="LOTE_ID" id="edit_lote" class="form-control">
+                                      <?php foreach ($lotes as $l): ?>
+                                        <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div class="modal-footer">
-                              <button type="submit" class="btn btn-success">Guardar cambios</button>
-                              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
-                            </div>
-                          </form>
+                              <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Guardar cambios</button>
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                              </div>
+                            </form>
+                          </div>
                         </div>
+                      </div>
+
+                      <form method="POST" action="EliminarProducto.php" style="display:inline;">
+                        <input type="hidden" name="id" value="<?= $p['PRODUCTO_ID']; ?>">
+
+                        <button type="submit" class="btn btn-sm btn-danger"
+                          onclick="return confirm('¿Estás seguro de eliminar este producto?');">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_productos=<?= $pagina_productos - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina_productos ?></span>
+
+              <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>"
+                href="?pagina_productos=<?= $pagina_productos + 1 ?>">
+                &gt;
+              </a>
+            </nav>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- GESTIÓN DE STOCK -->
+      <?php if ($rol == 'empleado'): ?>
+        <div class="card shadow-sm p-4 mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Stock</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
+                Generar venta
+              </button>
+
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalExistencias">
+                Generar stock
+              </button>
+
+              <!-- MODAL REGISTRO DE STOCK -->
+              <div class="modal fade" id="modalExistencias" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content modal-producto">
+                    <form method="POST">
+                      <input type="hidden" name="form_existencas" value="1">
+
+                      <div class="modal-header">
+                        <h5 class="modal-title">Registrar entrada de inventario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+
+                      <div class="modal-body">
+                        <div class="row">
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Código de barras</label>
+                            <input type="text" id="codigo_barras" class="form-control input-pro"
+                              placeholder="Escanea o escribe..." autofocus>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Producto</label>
+                            <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required>
+                              <option value="">Selecciona primero un proveedor</option>
+                            </select>
+                          </div>
+
+                          <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Proveedor</label>
+                            <select name="PROVEEDOR_ID" id="proveedor" class="form-control input-pro" required>
+                              <option value="">Selecciona proveedor</option>
+                              <?php while ($pr = $proveedores->fetch_assoc()): ?>
+                                <option value="<?= $pr['PROVEEDOR_ID'] ?>">
+                                  <?= $pr['NOMBRE'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Unidades</label>
+                            <input type="number" name="UNIDADES" class="form-control input-pro" required>
+                          </div>
+
+                          <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Almacén</label>
+                            <select name="ALMACEN_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona almacén</option>
+                              <?php while ($a = $almacenes->fetch_assoc()): ?>
+                                <option value="<?= $a['ALMACEN_ID'] ?>">
+                                  <?= $a['ALMACEN'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+                          <input type="hidden" name="crear_ubicacion" value="1">
+
+                          <?php $ubicaciones = $conn->query("SELECT UBICACION_ID, PASILLO, ESTANTE, NIVEL, SECCION FROM ubicaciones"); ?>
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Ubicación</label>
+                            <select name="UBICACION_ID" class="form-control input-pro" required>
+                              <option value="">Selecciona ubicación</option>
+                              <?php while ($u = $ubicaciones->fetch_assoc()): ?>
+                                <option value="<?= $u['UBICACION_ID'] ?>">
+                                  P<?= $u['PASILLO'] ?> - E<?= $u['ESTANTE'] ?> - N<?= $u['NIVEL'] ?> - S<?= $u['SECCION'] ?>
+                                </option>
+                              <?php endwhile; ?>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">
+                          Guardar
+                        </button>
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BUSCADOR -->
+          <input type="search" id="buscadorStock" class="form-control mb-3" placeholder="Buscar en sotck...">
+          <?php if (isset($_SESSION['mensaje']) || isset($_SESSION['mensaje_stock'])): ?>
+
+            <?php if (isset($_SESSION['mensaje'])): ?>
+              <div class="alert alert-<?= $_SESSION['tipo']; ?>">
+                <?= $_SESSION['mensaje']; ?>
+              </div>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['mensaje_stock'])): ?>
+              <div class="alert alert-warning">
+                <?= $_SESSION['mensaje_stock']; ?>
+              </div>
+            <?php endif; ?>
+
+            <?php
+            unset($_SESSION['mensaje'], $_SESSION['tipo'], $_SESSION['mensaje_stock'], $_SESSION['tipo_stock']);
+            ?>
+
+          <?php endif; ?>
+          <!-- TABLA DE STOCK -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Código de barras</th>
+                  <th>Nombre</th>
+                  <th>Marca</th>
+                  <th>Unidades</th>
+                  <th>Lote</th>
+                  <th>Almacén</th>
+                  <th>Ubicación</th>
+                </tr>
+              </thead>
+
+              <tbody id="tbodyStock">
+                <?php $contador = $offset_stock + 1; ?>
+                <!--esto no lo eliminen por alguna razón si lo hago se descuadra todo-->
+                <?php while ($s = $stock->fetch_assoc()): #pero está raro pq solo era para verificar si había stock bajoXD ?>
+                  <tr>
+                    <td><?= $contador++; ?></td>
+
+                    <td><?= $s['CODIGO_BARRAS']; ?></td>
+                    <td><?= $s['NOMBRE']; ?></td>
+                    <td><?= $s['MARCA']; ?></td>
+                    <td><?= $s['UNIDADES']; ?></td>
+                    <td><?= $s['LOTE_ID']; ?></td>
+                    <td><?= $s['ALMACEN']; ?></td>
+
+                    <td>
+                      <span class="badge bg-info text-dark">
+                        P-<?= $s['PASILLO']; ?>
+                        E-<?= $s['ESTANTE']; ?>
+                        N-<?= $s['NIVEL']; ?>
+                        S-<?= $s['SECCION']; ?>
+                      </span>
+                    </td>
+
+                  </tr>
+                <?php endwhile; ?>
+              </tbody>
+              <?php if (!empty($productosBajoStock)): ?>
+                <div class="alert alert-warning">
+                  <strong>Productos con stock bajo (<?= count($productosBajoStock) ?> con menos de 50 unidades):</strong>
+                  <ul class="mb-0">
+                    <?php foreach ($productosBajoStock as $producto): ?>
+                      <li><?= $producto; ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                </div>
+              <?php endif; ?>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_stock <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_stock=<?= $pagina_stock - 1 ?>">
+                &lt;
+              </a>
+
+              <span class="fw-bold"><?= $pagina_stock ?></span>
+
+              <a class="btn btn-light <?= ($pagina_stock >= $total_paginas_stock) ? 'disabled' : '' ?>"
+                href="?pagina_stock=<?= $pagina_stock + 1 ?>">
+                &gt;
+              </a>
+            </nav>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <!-- GESTIÓN DE MOVIMIENTOS -->
+      <?php if ($rol == 'empleado'): ?>
+        <div class="card shadow-sm p-4 mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Gestión de Movimientos</h4>
+
+            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalReporte">
+              Generar reporte
+            </button>
+
+            <!-- ===== MODAL REPORTES (CORREGIDO) ===== -->
+            <div class="modal fade" id="modalReporte" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content modal-producto modal-reporte">
+
+                  <!-- HEADER -->
+                  <div class="modal-header">
+                    <h5 class="modal-title">Generar Reporte</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <!-- BODY -->
+                  <div class="modal-body">
+
+                    <!-- FILTROS -->
+                    <div class="filtros-box">
+                      <div class="row g-3">
+
+                        <div class="col-md-4">
+                          <label class="form-label">Fecha inicio</label>
+                          <input type="date" id="fecha_inicio" class="form-control input-pro input-reporte">
+                        </div>
+
+                        <div class="col-md-4">
+                          <label class="form-label">Fecha fin</label>
+                          <input type="date" id="fecha_fin" class="form-control input-pro input-reporte">
+                        </div>
+
+                        <div class="col-md-4">
+                          <label class="form-label">Tipo</label>
+                          <select id="tipo" class="form-control input-pro input-reporte">
+                            <option value="">Todos</option>
+                            <option value="1">Entradas</option>
+                            <option value="2">Salidas</option>
+                            <option value="3">Altas</option>
+                            <option value="4">Bajas</option>
+                            <option value="5">Edición</option>
+                          </select>
+                        </div>
+
+                      </div>
+
+                      <div class="text-end mt-3">
+                        <button class="btn btn-buscar" onclick="buscarReporte()">
+                          Buscar
+                        </button>
                       </div>
                     </div>
 
-                    <form method="POST" action="EliminarProducto.php" style="display:inline;">
-                      <input type="hidden" name="id" value="<?= $p['PRODUCTO_ID']; ?>">
+                    <!-- RESULTADO -->
+                    <div class="tabla-box mt-3">
+                      <div id="tabla_reporte"></div>
+                    </div>
 
-                      <button type="submit" class="btn btn-sm btn-danger"
-                        onclick="return confirm('¿Estás seguro de eliminar este producto?');">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </form>
+                  </div>
 
-                  </td>
+                  <!-- FOOTER -->
+                  <div class="modal-footer">
+                    <button class="btn btn-pdf" onclick="generarPDF()">
+                      Imprimir
+                    </button>
+
+                    <button type="button" class="btn btn-cancelar btn-danger" data-bs-dismiss="modal">
+                      Cancelar
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- TABLA DE MOVIMIENTOS -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-dark">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Usuario</th>
+                  <th>Proveedor</th>
+                  <th>Almacén</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-          <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
-              href="?pagina_productos=<?= $pagina_productos - 1 ?>">
-              &lt;
-            </a>
+              </thead>
 
-            <span class="fw-bold"><?= $pagina_productos ?></span>
+              <tbody>
+                <?php foreach ($movimientos as $m): ?>
+                  <tr>
+                    <td><?= $m['FECHA_REGISTRO'] ?></td>
+                    <td>
+                      <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
+                        <?= $m['MOVIMIENTO'] ?>
+                      </span>
+                    </td>
+                    <td><?= $m['PRODUCTO'] ?></td>
+                    <td><?= $m['CANTIDAD'] ?></td>
+                    <td><?= $m['USUARIO'] ?></td>
+                    <td><?= $m['PROVEEDOR'] ?></td>
+                    <td><?= $m['ALMACEN_ID'] ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+            <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <a class="btn btn-light <?= ($pagina_mov <= 1) ? 'disabled' : '' ?>"
+                href="?pagina_mov=<?= $pagina_mov - 1 ?>">
+                &lt;
+              </a>
 
-            <a class="btn btn-light <?= ($pagina_productos >= $total_paginas_productos) ? 'disabled' : '' ?>"
-              href="?pagina_productos=<?= $pagina_productos + 1 ?>">
-              &gt;
-            </a>
-          </nav>
-        </div>
+              <span class="fw-bold"><?= $pagina_mov ?></span>
+
+              <a class="btn btn-light <?= ($pagina_mov >= $total_paginas_mov) ? 'disabled' : '' ?>"
+                href="?pagina_mov=<?= $pagina_mov + 1 ?>">
+                &gt;
+              </a>
+            </nav>
+          </div>
+          
       <?php endif; ?>
     </div>
 
-    <!-- GESTIÓN DE STOCK -->
-    <?php if ($rol == 'empleado'): ?>
+    <!-- SCRIPTS -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ================= BUSCADOR PRODUCTOS =================
+        const input = document.getElementById("buscador");
 
-      <div class="card shadow-sm p-4 mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Stock</h4>
-          <div class="d-flex gap-2">
-            <button class="btn btn-custom" onclick="window.location.href='GenerarCompra.php'">
-              Generar venta
-            </button>
+        if (input) {
+          input.addEventListener("keyup", function () {
 
-            <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalExistencias">
-              Generar stock
-            </button>
+            let valor = input.value.trim();
 
-            <!-- MODAL REGISTRO DE STOCK -->
-            <div class="modal fade" id="modalExistencias" tabindex="-1">
-              <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content modal-producto">
-                  <form method="POST">
-                    <input type="hidden" name="form_existencas" value="1">
+            if (valor === "") {
+              location.reload();
+              return;
+            }
 
-                    <div class="modal-header">
-                      <h5 class="modal-title">Registrar entrada de inventario</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-
-                    <div class="modal-body">
-                      <div class="row">
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Código de barras</label>
-                          <input type="text" id="codigo_barras" class="form-control input-pro"
-                            placeholder="Escanea o escribe..." autofocus>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Producto</label>
-                          <select name="PRODUCTO_ID" id="producto" class="form-control input-pro" required>
-                            <option value="">Selecciona primero un proveedor</option>
-                          </select>
-                        </div>
-
-                        <?php $proveedores = $conn->query("SELECT PROVEEDOR_ID, NOMBRE FROM proveedores"); ?>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Proveedor</label>
-                          <select name="PROVEEDOR_ID" id="proveedor" class="form-control input-pro" required>
-                            <option value="">Selecciona proveedor</option>
-                            <?php while ($pr = $proveedores->fetch_assoc()): ?>
-                              <option value="<?= $pr['PROVEEDOR_ID'] ?>">
-                                <?= $pr['NOMBRE'] ?>
-                              </option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Unidades</label>
-                          <input type="number" name="UNIDADES" class="form-control input-pro" required>
-                        </div>
-
-                        <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Almacén</label>
-                          <select name="ALMACEN_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona almacén</option>
-                            <?php while ($a = $almacenes->fetch_assoc()): ?>
-                              <option value="<?= $a['ALMACEN_ID'] ?>">
-                                <?= $a['ALMACEN'] ?>
-                              </option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
-                        <input type="hidden" name="crear_ubicacion" value="1">
-
-                        <?php $ubicaciones = $conn->query("SELECT UBICACION_ID, PASILLO, ESTANTE, NIVEL, SECCION FROM ubicaciones"); ?>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Ubicación</label>
-                          <select name="UBICACION_ID" class="form-control input-pro" required>
-                            <option value="">Selecciona ubicación</option>
-                            <?php while ($u = $ubicaciones->fetch_assoc()): ?>
-                              <option value="<?= $u['UBICACION_ID'] ?>">
-                                P<?= $u['PASILLO'] ?> - E<?= $u['ESTANTE'] ?> - N<?= $u['NIVEL'] ?> - S<?= $u['SECCION'] ?>
-                              </option>
-                            <?php endwhile; ?>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="submit" class="btn btn-success">
-                        Guardar
-                      </button>
-                      <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- BUSCADOR -->
-        <input type="search" id="buscadorStock" class="form-control mb-3" placeholder="Buscar en sotck...">
-        <?php if (isset($_SESSION['mensaje']) || isset($_SESSION['mensaje_stock'])): ?>
-
-          <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="alert alert-<?= $_SESSION['tipo']; ?>">
-              <?= $_SESSION['mensaje']; ?>
-            </div>
-          <?php endif; ?>
-
-          <?php if (isset($_SESSION['mensaje_stock'])): ?>
-            <div class="alert alert-warning">
-              <?= $_SESSION['mensaje_stock']; ?>
-            </div>
-          <?php endif; ?>
-
-          <?php
-          unset($_SESSION['mensaje'], $_SESSION['tipo'], $_SESSION['mensaje_stock'], $_SESSION['tipo_stock']);
-          ?>
-
-        <?php endif; ?>
-        <!-- TABLA DE STOCK -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Código de barras</th>
-                <th>Nombre</th>
-                <th>Marca</th>
-                <th>Unidades</th>
-                <th>Lote</th>
-                <th>Almacén</th>
-                <th>Ubicación</th>
-              </tr>
-            </thead>
-
-            <tbody id="tbodyStock">
-              <?php $contador = $offset_stock + 1; ?>
-              <?php
-              #creamos un arreglo para almacenar los productos que tienen bajo stock
-              $productosBajoStock = [];
-              #reiniciamos puntero
-              $stock->data_seek(0);
-              #en este punto con un while comparamos cada unos de los campos unidades para verificar
-              #que sean menores o iguales a 50
-              #si pasa esto entonces se van guardando en el array
-              while ($temp = $stock->fetch_assoc()) {
-                if ($temp['UNIDADES'] <= 50) {
-                  $productosBajoStock[] = $temp['NOMBRE'] . " (" . $temp['UNIDADES'] . ")";
-                }
-              }
-              $stock->data_seek(0);
-              ?>
-              <!--esto no lo eliminen por alguna razón si lo hago se descuadra todo-->
-              <?php while ($s = $stock->fetch_assoc()): #pero está raro pq solo era para verificar si había stock bajoXD ?>
-                <tr>
-                  <td><?= $contador++; ?></td>
-
-                  <td><?= $s['CODIGO_BARRAS']; ?></td>
-                  <td><?= $s['NOMBRE']; ?></td>
-                  <td><?= $s['MARCA']; ?></td>
-                  <td><?= $s['UNIDADES']; ?></td>
-                  <td><?= $s['LOTE_ID']; ?></td>
-                  <td><?= $s['ALMACEN']; ?></td>
-
-                  <td>
-                    <span class="badge bg-info text-dark">
-                      P-<?= $s['PASILLO']; ?>
-                      E-<?= $s['ESTANTE']; ?>
-                      N-<?= $s['NIVEL']; ?>
-                      S-<?= $s['SECCION']; ?>
-                    </span>
-                  </td>
-
-                </tr>
-              <?php endwhile; ?>
-            </tbody>
-            <?php if (!empty($productosBajoStock)): ?>
-              <div class="alert alert-warning">
-                <strong>Productos con bajo stock:</strong>
-                <ul class="mb-0">
-                  <?php foreach ($productosBajoStock as $producto): ?>
-                    <li><?= $producto; ?></li>
-                  <?php endforeach; ?>
-                </ul>
-              </div>
-            <?php endif; ?>
-          </table>
-          <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina_stock <= 1) ? 'disabled' : '' ?>"
-              href="?pagina_stock=<?= $pagina_stock - 1 ?>">
-              &lt;
-            </a>
-
-            <span class="fw-bold"><?= $pagina_stock ?></span>
-
-            <a class="btn btn-light <?= ($pagina_stock >= $total_paginas_stock) ? 'disabled' : '' ?>"
-              href="?pagina_stock=<?= $pagina_stock + 1 ?>">
-              &gt;
-            </a>
-          </nav>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <!-- GESTIÓN DE MOVIMIENTOS -->
-    <?php if ($rol == 'empleado'): ?>
-
-      <div class="card shadow-sm p-4 mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4>Gestión de Movimientos</h4>
-
-          <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#modalReporte">
-            Generar reporte
-          </button>
-
-          <!--- MODAL REPORTES--->
-        <div class="modal fade" id="modalReporte">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-
-              <div class="modal-header">
-                <h5>Generar Reporte</h5>
-              </div>
-
-              <div class="modal-body">
-                <!-- FILTROS -->
-                  <div class="row">
-                    <div class="col">
-                      <label>Fecha inicio</label>
-                      <input type="date" id="fecha_inicio" class="form-control">
-                    </div>
-
-                    <div class="col">
-                      <label>Fecha fin</label>
-                      <input type="date" id="fecha_fin" class="form-control">
-                    </div>
-
-                    <div class="col">
-                      <label>Tipo</label>
-                      <select id="tipo" class="form-control">
-                        <option value="">Todos</option>
-                        <option value="1">Entradas</option>
-                        <option value="2">Salidas</option>
-                        <option value="3">Altas</option>
-                        <option value="4">Bajas</option>
-                        <option value="5">Edición</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <br>
-
-                  <button class="btn btn-success" onclick="buscarReporte()">
-                    Buscar
-                  </button>
-
-                  <!-- TABLA REPORTE -->
-                  <div id="tabla_reporte"></div>
-
-                </div>
-
-                <button class="btn btn-success" onclick="generarPDF()">Imprimir</button>
-
-                <button type="button" class="btn ms-2 btn-danger"
-                  style="border-radius:10px; padding:8px 20px; font-weight:600;" data-bs-dismiss="modal">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TABLA DE MOVIMIENTOS -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-
-            <thead class="table-dark">
-              <tr>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Usuario</th>
-                <th>Proveedor</th>
-                <th>Almacén</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <?php foreach ($movimientos as $m): ?>
-                <tr>
-                  <td><?= $m['FECHA_REGISTRO'] ?></td>
-                  <td>
-                    <span class="badge <?= $m['MOVIMIENTO'] == 'ENTRADA' ? 'bg-success' : 'bg-danger' ?>">
-                      <?= $m['MOVIMIENTO'] ?>
-                    </span>
-                  </td>
-                  <td><?= $m['PRODUCTO'] ?></td>
-                  <td><?= $m['CANTIDAD'] ?></td>
-                  <td><?= $m['USUARIO'] ?></td>
-                  <td><?= $m['PROVEEDOR'] ?></td>
-                  <td><?= $m['ALMACEN_ID'] ?></td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-
-          </table>
-          <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
-            <a class="btn btn-light <?= ($pagina_mov <= 1) ? 'disabled' : '' ?>"
-              href="?pagina_mov=<?= $pagina_mov - 1 ?>">
-              &lt;
-            </a>
-
-            <span class="fw-bold"><?= $pagina_mov ?></span>
-
-            <a class="btn btn-light <?= ($pagina_mov >= $total_paginas_mov) ? 'disabled' : '' ?>"
-              href="?pagina_mov=<?= $pagina_mov + 1 ?>">
-              &gt;
-            </a>
-          </nav>
-        </div>
-      </div>
-    <?php endif; ?>
-  </div>
-
-  <!-- SCRIPTS -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      // ================= BUSCADOR PRODUCTOS =================
-      const input = document.getElementById("buscador");
-
-      if (input) {
-        input.addEventListener("keyup", function () {
-
-          let valor = input.value.trim();
-
-          if (valor === "") {
-            location.reload();
-            return;
-          }
-
-          fetch("buscarGeneral.php?q=" + valor)
+            fetch("buscarGeneral.php?q=" + valor)
             .then(res => res.json())
             .then(data => {
 
@@ -1397,55 +1403,54 @@ $movimientos = $conn->query("
 
               if (data.length === 0) {
                 html = `
-                    <tr>
-                      <td colspan="12" class="text-center text-danger">
-                        No se encontraron resultados
-                      </td>
-                    </tr>
-                  `;
+                  <tr>
+                    <td colspan="12" class="text-center text-danger">
+                      No se encontraron resultados
+                    </td>
+                  </tr>
+                `;
               } else {
                 data.forEach((p, index) => {
                   html += `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${p.CODIGO_BARRAS}</td>
-                        <td>${p.SKU}</td>
-                        <td>${p.NOMBRE}</td>
-                        <td>${p.DESCRIPCION}</td>
-                        <td>${p.PRECIO}</td>
-                        <td>${p.FECHA_REGISTRO}</td>
-                        <td>${p.LOTE_ID}</td>
-                        <td>${p.MARCA}</td>
-                        <td>${p.CATEGORIA}</td>
-                        <td>${p.PROVEEDOR}</td>
-                      </tr>
-                    `;
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${p.CODIGO_BARRAS}</td>
+                      <td>${p.SKU}</td>
+                      <td>${p.NOMBRE}</td>
+                      <td>${p.DESCRIPCION}</td>
+                      <td>${p.PRECIO}</td>
+                      <td>${p.FECHA_REGISTRO}</td>
+                      <td>${p.LOTE_ID}</td>
+                      <td>${p.MARCA}</td>
+                      <td>${p.CATEGORIA}</td>
+                      <td>${p.PROVEEDOR}</td>
+                    </tr>
+                  `;
                 });
               }
-
               document.getElementById("tbodyProductos").innerHTML = html;
             });
 
-        });
-      }
+          });
+        }
 
-      // ================= BUSCADOR USUARIOS =================
-      const buscadorUsuario = document.getElementById("buscadorUsuario");
-      const tbodyUsuarios = document.getElementById("tbodyUsuarios");
+        // ================= BUSCADOR USUARIOS =================
+        const buscadorUsuario = document.getElementById("buscadorUsuario");
+        const tbodyUsuarios = document.getElementById("tbodyUsuarios");
 
-      if (buscadorUsuario && tbodyUsuarios) {
-        buscadorUsuario.addEventListener("keyup", function () {
+        if (buscadorUsuario && tbodyUsuarios) {
+          buscadorUsuario.addEventListener("keyup", function () {
 
-          let valor = this.value.trim();
+            let valor = this.value.trim();
 
-          console.log("ESCRIBIENDO:", valor); // prueba
+            console.log("ESCRIBIENDO:", valor); // prueba
 
-          if (valor === "") {
-            location.reload();
-            return;
-          }
+            if (valor === "") {
+              location.reload();
+              return;
+            }
 
-          fetch("buscarUsuario.php?q=" + encodeURIComponent(valor))
+            fetch("buscarUsuario.php?q=" + encodeURIComponent(valor))
             .then(res => res.json())
             .then(data => {
 
@@ -1456,63 +1461,62 @@ $movimientos = $conn->query("
               } else {
                 data.forEach((u, index) => {
                   html += `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${u.NOMBRE}</td>
-                        <td>${u.APELLIDO_P}</td>
-                        <td>${u.APELLIDO_M}</td>
-                        <td>${u.CORREO}</td>
-                        <td>${u.ROL}</td>
-                        <td>${u.ESTADO}</td>
-                      </tr>
-                    `;
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${u.NOMBRE}</td>
+                      <td>${u.APELLIDO_P}</td>
+                      <td>${u.APELLIDO_M}</td>
+                      <td>${u.CORREO}</td>
+                      <td>${u.ROL}</td>
+                      <td>${u.ESTADO}</td>
+                    </tr>
+                  `;
                 });
               }
-
               tbodyUsuarios.innerHTML = html;
             });
+          });
+        }
+      });
 
-        });
-      }
-    });
+      //Lote de producto ubicado por categoria 
+      document.getElementById('categoria').addEventListener('change', function () {
+        let categoria_id = this.value;
 
-    //Lote de producto ubicado por categoria 
-    document.getElementById('categoria').addEventListener('change', function () {
-      let categoria_id = this.value;
+        const lote = document.getElementById('lote');
+        lote.innerHTML = '<option value="">Cargando...</option>';
 
-      const lote = document.getElementById('lote');
-      lote.innerHTML = '<option value="">Cargando...</option>';
+        fetch('obtener_lotes.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'categoria_id=' + categoria_id
+        })
 
-      fetch('obtener_lotes.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: 'categoria_id=' + categoria_id
-      })
         .then(response => response.text())
         .then(data => {
           lote.innerHTML = data;
         })
+
         .catch(() => {
           lote.innerHTML = '<option value="">Error al cargar</option>';
         });
+      });
 
-    });
+      //Buscador de stock
+      const buscadorStock = document.getElementById("buscadorStock");
+      if (buscadorStock) {
+        buscadorStock.addEventListener("keyup", function () {
 
-    //Buscador de stock
-    const buscadorStock = document.getElementById("buscadorStock");
-    if (buscadorStock) {
-      buscadorStock.addEventListener("keyup", function () {
+          let valor = this.value.trim();
 
-        let valor = this.value.trim();
+          if (valor === "") {
+            location.reload();
+            return;
+          }
 
-        if (valor === "") {
-          location.reload();
-          return;
-        }
-
-        fetch("buscarStock.php?q=" + encodeURIComponent(valor))
+          fetch("buscarStock.php?q=" + encodeURIComponent(valor))
           .then(res => res.json())
           .then(data => {
             console.log(data);
@@ -1553,89 +1557,90 @@ $movimientos = $conn->query("
             document.getElementById("tbodyStock").innerHTML = html;
           })
           .catch(err => console.error("Error:", err));
-      });
-    }
+        });
+      }
 
-    function abrirModalEditar(producto) {
-      document.getElementById("edit_id").value = producto.PRODUCTO_ID;
-      document.getElementById("edit_nombre").value = producto.NOMBRE;
-      document.getElementById("edit_precio").value = producto.PRECIO;
+      function abrirModalEditar(producto) {
+        document.getElementById("edit_id").value = producto.PRODUCTO_ID;
+        document.getElementById("edit_nombre").value = producto.NOMBRE;
+        document.getElementById("edit_precio").value = producto.PRECIO;
 
-      document.getElementById("edit_marca").value = producto.MARCA_ID;
-      document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
-      document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
-      document.getElementById("edit_lote").value = producto.LOTE_ID;
+        document.getElementById("edit_marca").value = producto.MARCA_ID;
+        document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
+        document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
+        document.getElementById("edit_lote").value = producto.LOTE_ID;
 
-      let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
-      modal.show();
-    }
+        let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
+        modal.show();
+      }
 
-    /*function eliminarProducto(id) {
-      // 1. Pedimos confirmación al usuario
-      if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+      /*function eliminarProducto(id) {
+        // 1. Pedimos confirmación al usuario
+        if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
 
-        // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
-        let formData = new FormData();
-        formData.append('id', id);
+          // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
+          let formData = new FormData();
+          formData.append('id', id);
 
-        // 3. Hacemos la petición al archivo correcto
-        fetch('EliminarProducto.php', {
-          method: 'POST',
-          body: formData
-        })
-          .then(response => {
-            // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
-            if (!response.ok) {
-              throw new Error("Error en la respuesta del servidor");
-            }
-            // Convertimos la respuesta a JSON
-            return response.json();
+          // 3. Hacemos la petición al archivo correcto
+          fetch('EliminarProducto.php', {
+            method: 'POST',
+            body: formData
           })
-          .then(data => {
-            if (data.success) {
-
-              // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
-              let fila = document.getElementById('fila-producto-' + id);
-              if (fila) {
-                fila.remove();
+            .then(response => {
+              // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
+              if (!response.ok) {
+                throw new Error("Error en la respuesta del servidor");
               }
+              // Convertimos la respuesta a JSON
+              return response.json();
+            })
+            .then(data => {
+              if (data.success) {
 
-            } else {
-              // El PHP devolvió success = false (ej. error de llaves foráneas)
-              alert("Error al eliminar el producto: " + data.message);
-            }
-          })
-          .catch(error => {
-            // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
-            console.error("Detalle del error:", error);
-            alert("Hubo un problema de conexión al intentar eliminar.");
-          });
+                // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
+                let fila = document.getElementById('fila-producto-' + id);
+                if (fila) {
+                  fila.remove();
+                }
+
+              } else {
+                // El PHP devolvió success = false (ej. error de llaves foráneas)
+                alert("Error al eliminar el producto: " + data.message);
+              }
+            })
+            .catch(error => {
+              // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
+              console.error("Detalle del error:", error);
+              alert("Hubo un problema de conexión al intentar eliminar.");
+            });
+        }
       }
-    }
-*/
-    //AGREGAR NUEVA MARCA
-    const selectMarca = document.getElementById("marca");
-    const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
-    const inputNuevaMarca = document.getElementById("nuevaMarca");
-    selectMarca.addEventListener("change", function () {
+      */
 
-      if (this.value === "nueva") {
-        contenedorNuevaMarca.style.display = "block";
-        inputNuevaMarca.setAttribute("required", "true");
-      } else {
-        contenedorNuevaMarca.style.display = "none";
-        inputNuevaMarca.removeAttribute("required");
-        inputNuevaMarca.value = "";
-      }
+      //AGREGAR NUEVA MARCA
+      const selectMarca = document.getElementById("marca");
+      const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
+      const inputNuevaMarca = document.getElementById("nuevaMarca");
+      selectMarca.addEventListener("change", function () {
 
-    });
+        if (this.value === "nueva") {
+          contenedorNuevaMarca.style.display = "block";
+          inputNuevaMarca.setAttribute("required", "true");
+        } else {
+          contenedorNuevaMarca.style.display = "none";
+          inputNuevaMarca.removeAttribute("required");
+          inputNuevaMarca.value = "";
+        }
 
-    //Producto por codigo de barras al generar stock
-    document.getElementById("codigo_barras").addEventListener("keyup", function () {
-      let codigo = this.value.trim();
-      if (codigo.length < 3) return;
+      });
 
-      fetch("buscarProductoPorCodigo.php?codigo=" + codigo)
+      //Producto por codigo de barras al generar stock
+      document.getElementById("codigo_barras").addEventListener("keyup", function () {
+        let codigo = this.value.trim();
+        if (codigo.length < 3) return;
+
+        fetch("buscarProductoPorCodigo.php?codigo=" + codigo)
         .then(res => res.json())
         .then(data => {
 
@@ -1652,56 +1657,54 @@ $movimientos = $conn->query("
 
           }
         });
-    });
+      });
 
-    ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
-    function buscarReporte() {
-      let inicio = document.getElementById("fecha_inicio").value;
-      let fin = document.getElementById("fecha_fin").value;
-      let tipo = document.getElementById("tipo").value;
+      ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
+      function buscarReporte() {
+        let inicio = document.getElementById("fecha_inicio").value;
+        let fin = document.getElementById("fecha_fin").value;
+        let tipo = document.getElementById("tipo").value;
 
-      fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
-        .then(res => res.text())
-        .then(data => {
-          document.getElementById("tabla_reporte").innerHTML = data;
-        });
-    }
+        fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
+          .then(res => res.text())
+          .then(data => {
+            document.getElementById("tabla_reporte").innerHTML = data;
+          });
+      }
 
-    //ESTE SCRIPT SE ASEGURA QUE EL PROVEEDOR SE SELECCIONE PRIMERO
-    const proveedor = document.getElementById("proveedor");
-    const producto = document.getElementById("producto");
+      //ESTE SCRIPT SE ASEGURA QUE EL PROVEEDOR SE SELECCIONE PRIMERO
+      const proveedor = document.getElementById("proveedor");
+      const producto = document.getElementById("producto");
+      if (proveedor && producto) {
+        proveedor.addEventListener("change", function () {
 
-    if (proveedor && producto) {
-      proveedor.addEventListener("change", function () {
+          let proveedorId = this.value;
 
-        let proveedorId = this.value;
+          producto.innerHTML = '<option value="">Cargando...</option>';
+          producto.disabled = true;
 
-        producto.innerHTML = '<option value="">Cargando...</option>';
-        producto.disabled = true;
+          if (proveedorId === "") {
+            producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
+            return;
+          }
 
-        if (proveedorId === "") {
-          producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
-          return;
-        }
-
-        fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
+          fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
           .then(response => response.text())
           .then(data => {
             producto.innerHTML = data;
             producto.disabled = false;
           });
-      });
-    }
+        });
+      }
 
-    ///esto imprme el pdf
-    function generarPDF() {
-      let inicio = document.getElementById("fecha_inicio").value;
-      let fin = document.getElementById("fecha_fin").value;
-      let tipo = document.getElementById("tipo").value;
+      //esto imprme el pdf
+      function generarPDF() {
+        let inicio = document.getElementById("fecha_inicio").value;
+        let fin = document.getElementById("fecha_fin").value;
+        let tipo = document.getElementById("tipo").value;
 
-      window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
-    }
-  </script>
-</body>
-
+        window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
+      }
+    </script>
+  </body>
 </html>

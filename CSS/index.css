@@ -159,3 +159,107 @@ label {
   font-weight: 400;
   color: black !important;
 }
+
+/* ===== MODAL REPORTE PRO ===== */
+
+.modal-reporte {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Caja de filtros */
+.filtros-box {
+  background: #f8fbff;
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px solid #e3ecf5;
+}
+
+/* Inputs especiales */
+.input-reporte {
+  transition: all 0.2s ease;
+}
+
+.input-reporte:focus {
+  transform: scale(1.02);
+}
+
+/* Botón buscar */
+.btn-buscar {
+  background: linear-gradient(135deg, #1e90ff, #0d2b3e);
+  color: white !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 8px 20px;
+}
+
+.btn-buscar:hover {
+  transform: scale(1.05);
+}
+
+/* Contenedor de resultados */
+.tabla-box {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Footer bonito */
+.modal-footer {
+  border-top: none;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Botón PDF */
+.btn-pdf {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 8px 20px;
+}
+
+.btn-pdf:hover {
+  transform: scale(1.05);
+}
+
+/* ===== SOLO MODAL REPORTE (NO AFECTA NADA MÁS) ===== */
+
+.modal-reporte .modal-body {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.modal-reporte .modal-header {
+  background: linear-gradient(135deg, #0d2b3e, #1e90ff);
+}
+
+.modal-reporte .modal-title,
+.modal-reporte h5 {
+  color: white;
+}
+
+.modal-reporte .form-control {
+  border-radius: 10px;
+  border: 2px solid+ #dcdcdc;
+}
+
+.modal-reporte .form-control:focus {
+  border-color: #1e90ff;
+  box-shadow: 0 0 4px rgba(30,144,255,0.2);
+}
+
+.modal-reporte .btn-success {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-buscar:hover,
+.btn-pdf:hover {
+  color: white !important;
+}
