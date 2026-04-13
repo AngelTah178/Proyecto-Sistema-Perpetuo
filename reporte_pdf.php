@@ -1,9 +1,13 @@
 <?php
 require_once __DIR__ . "/dompdf/autoload.inc.php";
-use Dompdf\Dompdf;
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 include "conexion.php";
+
+// ================== CONFIG ==================
+date_default_timezone_set("America/Cancun");
 
 $inicio = $_GET['inicio'] ?? '';
 $fin = $_GET['fin'] ?? '';
@@ -20,6 +24,7 @@ if (!empty($tipo)) {
     $condiciones[] = "m.TIPO_ID = $tipo";
 }
 
+// ================== CONSULTA ==================
 $sql = "
 SELECT
     m.FECHA_REGISTRO, 
@@ -46,8 +51,23 @@ $sql .= " ORDER BY m.FECHA_REGISTRO DESC";
 
 $result = $conn->query($sql);
 
-# ================= HTML DEL PDF =================
-# ================= HTML DEL PDF =================
+// ================== TOTALES ==================
+$totales = [
+    'entrada' => 0,
+    'salida' => 0,
+    'alta' => 0,
+    'baja' => 0,
+    'edicion' => 0
+];
+
+$totalGeneral = 0;
+
+// ================== FECHAS ==================
+$fechaActual = date("d/m/Y H:i");
+$inicioFormat = !empty($inicio) ? date("d/m/Y", strtotime($inicio)) : "Todos";
+$finFormat = !empty($fin) ? date("d/m/Y", strtotime($fin)) : "Todos";
+
+// ================== LOGO ==================
 $path = __DIR__ . '/assets/Logo.png';
 
 if (file_exists($path)) {
@@ -55,35 +75,46 @@ if (file_exists($path)) {
     $data = file_get_contents($path);
     $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
 
-    $img = '<img src="' . $base64 . '" width="200">';
+    $img = '<img src="' . $base64 . '" style="width:120px;">';
 } else {
-    $img = '<p>NO SE ENCONTRÓ EL LOGO</p>';
+    $img = '';
 }
+
+// ================== HTML ==================
 $html = '
 <style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
     .header {
-        width: 100%;
+        position: relative;
         margin-bottom: 20px;
     }
 
     .logo {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        width: 80px;
+        top: 0;
+        left: 0;
     }
 
-    h2 {
+    .titulo {
         text-align: center;
-        margin: 0;
-        padding-top: 20px;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .info {
+        text-align: center;
+        font-size: 12px;
+        margin-top: 5px;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 40px;
-        font-size: 12px;
+        margin-top: 30px;
+        font-size: 11px;
     }
 
     th, td {
@@ -93,7 +124,8 @@ $html = '
     }
 
     th {
-        background: #eee;
+        background: #0d2b3e;
+        color: white;
     }
 
     .entrada { color: green; font-weight: bold; }
@@ -104,8 +136,15 @@ $html = '
 </style>
 
 <div class="header">
-' . $img . '
-    <h2>Reporte de Movimientos</h2>
+    <div class="logo">'.$img.'</div>
+    <div class="titulo">Reporte de Movimientos</div>
+    <div class="info">
+        Fecha: '.$fechaActual.' |
+        Inicio: '.$inicioFormat.' |
+        Fin: '.$finFormat.'
+    </div>
+</div>
+
 <table>
 <tr>
     <th>Tipo</th>
@@ -115,22 +154,32 @@ $html = '
     <th>Cantidad</th>
     <th>Almacén</th>
     <th>Proveedor</th>
-</tr>';
+</tr>
+';
 
+// ================== FILAS ==================
 while ($row = $result->fetch_assoc()) {
 
-    // color según tipo
-    $tipo = strtolower($row['MOVIMIENTO']);
+    $tipoMov = strtolower($row['MOVIMIENTO']);
+    $cantidad = (int)$row['CANTIDAD'];
 
-    if ($tipo == 'entrada')
+    // SUMAR TOTALES
+    if (isset($totales[$tipoMov])) {
+        $totales[$tipoMov] += $cantidad;
+    }
+
+    $totalGeneral += $cantidad;
+
+    // CLASES DE COLOR
+    if ($tipoMov == 'entrada')
         $clase = 'entrada';
-    elseif ($tipo == 'salida')
+    elseif ($tipoMov == 'salida')
         $clase = 'salida';
-    elseif ($tipo == 'alta')
+    elseif ($tipoMov == 'alta')
         $clase = 'alta';
-    elseif ($tipo == 'baja')
+    elseif ($tipoMov == 'baja')
         $clase = 'baja';
-    elseif ($tipo == 'edicion' || $tipo == 'edición')
+    elseif ($tipoMov == 'edicion' || $tipoMov == 'edición')
         $clase = 'edicion';
     else
         $clase = '';
@@ -140,27 +189,49 @@ while ($row = $result->fetch_assoc()) {
         <td>{$row['USUARIO']}</td>
         <td>{$row['FECHA_REGISTRO']}</td>
         <td>{$row['PRODUCTO']}</td>
-        <td>{$row['CANTIDAD']}</td>
+        <td>{$cantidad}</td>
         <td>{$row['ALMACEN']}</td>
         <td>{$row['PROVEEDOR']}</td>
     </tr>";
 }
 
-$html .= "</table>";
+$html .= "</table>
 
-# ================= GENERAR PDF =================
-$dompdf = new Dompdf();
-use Dompdf\Options;
+<br><br>
 
+<h3 style='text-align:center;'>Resumen de Totales</h3>
+
+<table>
+<tr>
+    <th>Tipo</th>
+    <th>Total</th>
+</tr>
+<tr><td>Entradas</td><td>{$totales['entrada']}</td></tr>
+<tr><td>Salidas</td><td>{$totales['salida']}</td></tr>
+<tr><td>Altas</td><td>{$totales['alta']}</td></tr>
+<tr><td>Bajas</td><td>{$totales['baja']}</td></tr>
+<tr><td>Edición</td><td>{$totales['edicion']}</td></tr>
+<tr>
+    <th>Total General</th>
+    <th>{$totalGeneral}</th>
+</tr>
+</table>";
+
+// ================== DOMPDF ==================
 $options = new Options();
 $options->set('isRemoteEnabled', true);
 $options->set('isHtml5ParserEnabled', true);
 
 $dompdf = new Dompdf($options);
-$dompdf->loadHtml($html);
 
+$dompdf->loadHtml($html);
 $dompdf->setPaper("letter", "portrait");
 
 $dompdf->render();
 
+// PAGINACIÓN (UNA SOLA)
+$canvas = $dompdf->getCanvas();
+$canvas->page_text(450, 770, "Página {PAGE_NUM} de {PAGE_COUNT}", null, 10, [0,0,0]);
+
+// DESCARGAR PDF
 $dompdf->stream("reporte.pdf", ["Attachment" => true]);
