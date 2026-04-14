@@ -7,12 +7,12 @@ $tipo = $_GET['tipo'] ?? '';
 
 $condiciones = [];
 
-// 🔥 CORRECCIÓN AQUÍ
+// 
 if (!empty($inicio) && !empty($fin)) {
     $condiciones[] = "DATE(m.FECHA_REGISTRO) BETWEEN '$inicio' AND '$fin'";
 }
 
-// 🔥 FILTRO TIPO BIEN VALIDADO
+// 
 if (isset($_GET['tipo']) && $_GET['tipo'] !== '') {
     $tipo = (int) $_GET['tipo'];
     $condiciones[] = "m.TIPO_ID = $tipo";
