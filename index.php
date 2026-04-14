@@ -532,6 +532,12 @@
       <div class="mb-4">
         <h2 class="fw-bold">Bienvenido <?php echo $_SESSION['NOMBRE']; ?></h2>
         <p class="text-muted">Panel de administración</p>
+
+        <!-- 
+        <div class="d-flex gap-2">
+          <button class="btn btn-custom" onclick = "window.location.href='VistaStock.php'">Gestionar Stock</button>
+        </div>
+        -->
       </div>
 
       <!-- CARDS -->
