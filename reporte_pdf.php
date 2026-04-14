@@ -136,12 +136,12 @@ $html = '
 </style>
 
 <div class="header">
-    <div class="logo">'.$img.'</div>
+    <div class="logo">' . $img . '</div>
     <div class="titulo">Reporte de Movimientos</div>
     <div class="info">
-        Fecha: '.$fechaActual.' |
-        Inicio: '.$inicioFormat.' |
-        Fin: '.$finFormat.'
+        Fecha: ' . $fechaActual . ' |
+        Inicio: ' . $inicioFormat . ' |
+        Fin: ' . $finFormat . '
     </div>
 </div>
 
@@ -161,7 +161,7 @@ $html = '
 while ($row = $result->fetch_assoc()) {
 
     $tipoMov = strtolower($row['MOVIMIENTO']);
-    $cantidad = (int)$row['CANTIDAD'];
+    $cantidad = (int) $row['CANTIDAD'];
 
     // SUMAR TOTALES
     if (isset($totales[$tipoMov])) {
@@ -231,7 +231,7 @@ $dompdf->render();
 
 // PAGINACIÓN (UNA SOLA)
 $canvas = $dompdf->getCanvas();
-$canvas->page_text(450, 770, "Página {PAGE_NUM} de {PAGE_COUNT}", null, 10, [0,0,0]);
+$canvas->page_text(450, 770, "Página {PAGE_NUM} de {PAGE_COUNT}", null, 10, [0, 0, 0]);
 
 // DESCARGAR PDF
 $dompdf->stream("reporte.pdf", ["Attachment" => true]);
