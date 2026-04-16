@@ -1666,12 +1666,19 @@
           let inicio = document.getElementById("fecha_inicio").value;
           let fin = document.getElementById("fecha_fin").value;
           let tipo = document.getElementById("tipo").value;
+          let btnPDF = document.getElementById("btnPDF");
 
           fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
-            .then(res => res.text())
-            .then(data => {
-              document.getElementById("tabla_reporte").innerHTML = data;
-            });
+          .then(res => res.text())
+          .then(data => {
+            document.getElementById("tabla_reporte").innerHTML = data;
+ 
+            if (inicio !== "" && fin !== "" && data.trim() !== "") {
+              btnPDF.disabled = false;
+            } else {
+              btnPDF.disabled = true;
+            }
+          });
         }
 
         //ESTE SCRIPT SE ASEGURA QUE EL PROVEEDOR SE SELECCIONE PRIMERO
@@ -1708,7 +1715,7 @@
           window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
         }
 
-        //esto vlaida que se seleccionen fechas
+        //esto valida que se seleccionen fechas
         const inicio = document.getElementById("fecha_inicio");
         const fin = document.getElementById("fecha_fin");
         const btnPDF = document.getElementById("btnPDF");
