@@ -601,11 +601,10 @@
 
         <?php endif; ?>
       </div>
-
-      <!-- TABLAS DE USUARIOS / PRODUCTOS -->
-      <div class="card shadow-sm p-4">
-        <!-- GESTIÓN DE USUARIOS -->
-        <?php if ($rol == 'admin'): ?>
+      
+      <!-- GESTIÓN DE USUARIOS -->
+      <?php if ($rol == 'admin'): ?>
+        <div class="card shadow-sm p-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Usuarios</h4>
 
@@ -762,10 +761,12 @@
               </a>
             </nav>
           </div>
-        <?php endif; ?>
-
-        <!-- GESTIÓN DE PRODUCTOS -->
-        <?php if ($rol != 'admin'): ?>
+        </div>
+      <?php endif; ?>
+      
+      <!-- GESTIÓN DE PRODUCTOS -->
+      <?php if ($rol == 'empleado' || $rol == 'admin'): ?>
+        <div class="card shadow-sm p-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Productos</h4>
             <div class="d-flex gap-2">
@@ -890,7 +891,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div>                            
 
           <!-- BUSCADOR -->
           <input type="search" id="buscador" class="form-control mb-3" placeholder="Buscar producto...">
@@ -1053,11 +1054,11 @@
               </a>
             </nav>
           </div>
-        <?php endif; ?>
-      </div>
+        </div>
+      <?php endif; ?>
 
       <!-- GESTIÓN DE STOCK -->
-      <?php if ($rol == 'empleado'): ?>
+      <?php if ($rol == 'empleado' || $rol == 'admin'): ?>
         <div class="card shadow-sm p-4 mt-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Gestión de Stock</h4>
@@ -1379,357 +1380,355 @@
               </a>
             </nav>
           </div>
-        <?php endif; ?>
-      </div>
+      <?php endif; ?>
+    </div>
 
-      <!-- SCRIPTS -->
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          // ================= BUSCADOR PRODUCTOS =================
-          const input = document.getElementById("buscador");
+    <!-- SCRIPTS -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ================= BUSCADOR PRODUCTOS =================
+        const input = document.getElementById("buscador");
+        if (input) {
+          input.addEventListener("keyup", function () {
 
-          if (input) {
-            input.addEventListener("keyup", function () {
-
-              let valor = input.value.trim();
-
-              if (valor === "") {
-                location.reload();
-                return;
-              }
-
-              fetch("buscarGeneral.php?q=" + valor)
-              .then(res => res.json())
-              .then(data => {
-
-                let html = "";
-
-                if (data.length === 0) {
-                  html = `
-                    <tr>
-                      <td colspan="12" class="text-center text-danger">
-                        No se encontraron resultados
-                      </td>
-                    </tr>
-                  `;
-                } else {
-                  data.forEach((p, index) => {
-                    html += `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${p.CODIGO_BARRAS}</td>
-                        <td>${p.SKU}</td>
-                        <td>${p.NOMBRE}</td>
-                        <td>${p.DESCRIPCION}</td>
-                        <td>${p.PRECIO}</td>
-                        <td>${p.FECHA_REGISTRO}</td>
-                        <td>${p.LOTE_ID}</td>
-                        <td>${p.MARCA}</td>
-                        <td>${p.CATEGORIA}</td>
-                        <td>${p.PROVEEDOR}</td>
-                      </tr>
-                    `;
-                  });
-                }
-                document.getElementById("tbodyProductos").innerHTML = html;
-              });
-            });
-          }
-
-          // ================= BUSCADOR USUARIOS =================
-          const buscadorUsuario = document.getElementById("buscadorUsuario");
-          const tbodyUsuarios = document.getElementById("tbodyUsuarios");
-
-          if (buscadorUsuario && tbodyUsuarios) {
-            buscadorUsuario.addEventListener("keyup", function () {
-
-              let valor = this.value.trim();
-
-              console.log("ESCRIBIENDO:", valor); // prueba
-
-              if (valor === "") {
-                location.reload();
-                return;
-              }
-
-              fetch("buscarUsuario.php?q=" + encodeURIComponent(valor))
-              .then(res => res.json())
-              .then(data => {
-
-                let html = "";
-
-                if (data.length === 0) {
-                  html = `<tr><td colspan="8">No hay usuarios</td></tr>`;
-                } else {
-                  data.forEach((u, index) => {
-                    html += `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${u.NOMBRE}</td>
-                        <td>${u.APELLIDO_P}</td>
-                        <td>${u.APELLIDO_M}</td>
-                        <td>${u.CORREO}</td>
-                        <td>${u.ROL}</td>
-                        <td>${u.ESTADO}</td>
-                      </tr>
-                    `;
-                  });
-                }
-                tbodyUsuarios.innerHTML = html;
-              });
-            });
-          }
-        });
-
-        //Lote de producto ubicado por categoria 
-        document.getElementById('categoria').addEventListener('change', function () {
-          let categoria_id = this.value;
-
-          const lote = document.getElementById('lote');
-          lote.innerHTML = '<option value="">Cargando...</option>';
-
-          fetch('obtener_lotes.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'categoria_id=' + categoria_id
-          })
-
-          .then(response => response.text())
-          .then(data => {
-            lote.innerHTML = data;
-          })
-
-          .catch(() => {
-            lote.innerHTML = '<option value="">Error al cargar</option>';
-          });
-        });
-
-        //Buscador de stock
-        const buscadorStock = document.getElementById("buscadorStock");
-        if (buscadorStock) {
-          buscadorStock.addEventListener("keyup", function () {
-
-            let valor = this.value.trim();
+            let valor = input.value.trim();
 
             if (valor === "") {
               location.reload();
               return;
             }
 
-            fetch("buscarStock.php?q=" + encodeURIComponent(valor))
+            fetch("buscarGeneral.php?q=" + valor)
             .then(res => res.json())
             .then(data => {
-              console.log(data);
 
               let html = "";
 
               if (data.length === 0) {
                 html = `
                   <tr>
-                    <td colspan="8" class="text-center text-danger">
+                    <td colspan="12" class="text-center text-danger">
                       No se encontraron resultados
                     </td>
                   </tr>
                 `;
               } else {
-                data.forEach((s, index) => {
+                data.forEach((p, index) => {
                   html += `
                     <tr>
                       <td>${index + 1}</td>
-                      <td>${s.CODIGO_BARRAS}</td>
-                      <td>${s.NOMBRE}</td>
-                      <td>${s.MARCA}</td>
-                      <td>${s.UNIDADES}</td>
-                      <td>${s.LOTE_ID}</td>
-                      <td>${s.ALMACEN}</td>
-                      <td>
-                        <span class="badge bg-info text-dark">
-                          P${s.PASILLO} -
-                          E${s.ESTANTE} -
-                          N${s.NIVEL} -
-                          S${s.SECCION}
-                        </span>
-                      </td>
+                      <td>${p.CODIGO_BARRAS}</td>
+                      <td>${p.SKU}</td>
+                      <td>${p.NOMBRE}</td>
+                      <td>${p.DESCRIPCION}</td>
+                      <td>${p.PRECIO}</td>
+                      <td>${p.FECHA_REGISTRO}</td>
+                      <td>${p.LOTE_ID}</td>
+                      <td>${p.MARCA}</td>
+                      <td>${p.CATEGORIA}</td>
+                      <td>${p.PROVEEDOR}</td>
                     </tr>
                   `;
                 });
               }
-              document.getElementById("tbodyStock").innerHTML = html;
-            })
-            .catch(err => console.error("Error:", err));
-          });
-        }
-
-        function abrirModalEditar(producto) {
-          document.getElementById("edit_id").value = producto.PRODUCTO_ID;
-          document.getElementById("edit_nombre").value = producto.NOMBRE;
-          document.getElementById("edit_precio").value = producto.PRECIO;
-
-          document.getElementById("edit_marca").value = producto.MARCA_ID;
-          document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
-          document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
-          document.getElementById("edit_lote").value = producto.LOTE_ID;
-
-          let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
-          modal.show();
-        }
-
-        /*function eliminarProducto(id) {
-          // 1. Pedimos confirmación al usuario
-          if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-
-            // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
-            let formData = new FormData();
-            formData.append('id', id);
-
-            // 3. Hacemos la petición al archivo correcto
-            fetch('EliminarProducto.php', {
-              method: 'POST',
-              body: formData
-            })
-              .then(response => {
-                // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
-                if (!response.ok) {
-                  throw new Error("Error en la respuesta del servidor");
-                }
-                // Convertimos la respuesta a JSON
-                return response.json();
-              })
-              .then(data => {
-                if (data.success) {
-
-                  // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
-                  let fila = document.getElementById('fila-producto-' + id);
-                  if (fila) {
-                    fila.remove();
-                  }
-
-                } else {
-                  // El PHP devolvió success = false (ej. error de llaves foráneas)
-                  alert("Error al eliminar el producto: " + data.message);
-                }
-              })
-              .catch(error => {
-                // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
-                console.error("Detalle del error:", error);
-                alert("Hubo un problema de conexión al intentar eliminar.");
-              });
-          }
-        }
-        */
-
-        //AGREGAR NUEVA MARCA
-        const selectMarca = document.getElementById("marca");
-        const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
-        const inputNuevaMarca = document.getElementById("nuevaMarca");
-        selectMarca.addEventListener("change", function () {
-
-          if (this.value === "nueva") {
-            contenedorNuevaMarca.style.display = "block";
-            inputNuevaMarca.setAttribute("required", "true");
-          } else {
-            contenedorNuevaMarca.style.display = "none";
-            inputNuevaMarca.removeAttribute("required");
-            inputNuevaMarca.value = "";
-          }
-
-        });
-
-        //Producto por codigo de barras al generar stock
-        document.getElementById("codigo_barras").addEventListener("keyup", function () {
-          let codigo = this.value.trim();
-          if (codigo.length < 3) return;
-
-          fetch("buscarProductoPorCodigo.php?codigo=" + codigo)
-          .then(res => res.json())
-          .then(data => {
-
-            if (data.success) {
-
-              // SETEAR PRODUCTO
-              document.getElementById("producto").innerHTML =
-              `<option value="${data.producto.PRODUCTO_ID}" selected>
-                ${data.producto.NOMBRE}
-              </option>`;
-
-              // SETEAR PROVEEDOR
-              document.getElementById("proveedor").value = data.producto.PROVEEDOR_ID;
-
-            }
-          });
-        });
-
-        ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
-        function buscarReporte() {
-          let inicio = document.getElementById("fecha_inicio").value;
-          let fin = document.getElementById("fecha_fin").value;
-          let tipo = document.getElementById("tipo").value;
-          let btnPDF = document.getElementById("btnPDF");
-
-          fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
-          .then(res => res.text())
-          .then(data => {
-            document.getElementById("tabla_reporte").innerHTML = data;
- 
-            if (inicio !== "" && fin !== "" && data.trim() !== "") {
-              btnPDF.disabled = false;
-            } else {
-              btnPDF.disabled = true;
-            }
-          });
-        }
-
-        //ESTE SCRIPT SE ASEGURA QUE EL PROVEEDOR SE SELECCIONE PRIMERO
-        const proveedor = document.getElementById("proveedor");
-        const producto = document.getElementById("producto");
-        if (proveedor && producto) {
-          proveedor.addEventListener("change", function () {
-
-            let proveedorId = this.value;
-
-            producto.innerHTML = '<option value="">Cargando...</option>';
-            producto.disabled = true;
-
-            if (proveedorId === "") {
-              producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
-              return;
-            }
-
-            fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
-            .then(response => response.text())
-            .then(data => {
-              producto.innerHTML = data;
-              producto.disabled = false;
+              document.getElementById("tbodyProductos").innerHTML = html;
             });
           });
         }
 
-        //esto imprme el pdf
-        function generarPDF() {
-          let inicio = document.getElementById("fecha_inicio").value;
-          let fin = document.getElementById("fecha_fin").value;
-          let tipo = document.getElementById("tipo").value;
+        // ================= BUSCADOR USUARIOS =================
+        const buscadorUsuario = document.getElementById("buscadorUsuario");
+        const tbodyUsuarios = document.getElementById("tbodyUsuarios");
+        if (buscadorUsuario && tbodyUsuarios) {
+          buscadorUsuario.addEventListener("keyup", function () {
 
-          window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
+            let valor = this.value.trim();
+
+            console.log("ESCRIBIENDO:", valor); // prueba
+
+            if (valor === "") {
+              location.reload();
+              return;
+            }
+
+            fetch("buscarUsuario.php?q=" + encodeURIComponent(valor))
+            .then(res => res.json())
+            .then(data => {
+
+              let html = "";
+
+              if (data.length === 0) {
+                html = `<tr><td colspan="8">No hay usuarios</td></tr>`;
+              } else {
+                data.forEach((u, index) => {
+                  html += `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${u.NOMBRE}</td>
+                      <td>${u.APELLIDO_P}</td>
+                      <td>${u.APELLIDO_M}</td>
+                      <td>${u.CORREO}</td>
+                      <td>${u.ROL}</td>
+                      <td>${u.ESTADO}</td>
+                    </tr>
+                  `;
+                });
+              }
+              tbodyUsuarios.innerHTML = html;
+            });
+          });
+        }
+      });
+
+      //Lote de producto ubicado por categoria 
+      document.getElementById('categoria').addEventListener('change', function () {
+        let categoria_id = this.value;
+
+        const lote = document.getElementById('lote');
+        lote.innerHTML = '<option value="">Cargando...</option>';
+
+        fetch('obtener_lotes.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'categoria_id=' + categoria_id
+        })
+
+        .then(response => response.text())
+        .then(data => {
+          lote.innerHTML = data;
+        })
+
+        .catch(() => {
+          lote.innerHTML = '<option value="">Error al cargar</option>';
+        });
+      });
+
+      //Buscador de stock
+      const buscadorStock = document.getElementById("buscadorStock");
+      if (buscadorStock) {
+        buscadorStock.addEventListener("keyup", function () {
+
+          let valor = this.value.trim();
+
+          if (valor === "") {
+            location.reload();
+            return;
+          }
+
+          fetch("buscarStock.php?q=" + encodeURIComponent(valor))
+          .then(res => res.json())
+          .then(data => {
+            console.log(data);
+
+            let html = "";
+
+            if (data.length === 0) {
+              html = `
+                <tr>
+                  <td colspan="8" class="text-center text-danger">
+                    No se encontraron resultados
+                  </td>
+                </tr>
+              `;
+            } else {
+              data.forEach((s, index) => {
+                html += `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${s.CODIGO_BARRAS}</td>
+                    <td>${s.NOMBRE}</td>
+                    <td>${s.MARCA}</td>
+                    <td>${s.UNIDADES}</td>
+                    <td>${s.LOTE_ID}</td>
+                    <td>${s.ALMACEN}</td>
+                    <td>
+                      <span class="badge bg-info text-dark">
+                        P${s.PASILLO} -
+                        E${s.ESTANTE} -
+                        N${s.NIVEL} -
+                        S${s.SECCION}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              });
+            }
+            document.getElementById("tbodyStock").innerHTML = html;
+          })
+          .catch(err => console.error("Error:", err));
+        });
+      }
+
+      function abrirModalEditar(producto) {
+        document.getElementById("edit_id").value = producto.PRODUCTO_ID;
+        document.getElementById("edit_nombre").value = producto.NOMBRE;
+        document.getElementById("edit_precio").value = producto.PRECIO;
+
+        document.getElementById("edit_marca").value = producto.MARCA_ID;
+        document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
+        document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
+        document.getElementById("edit_lote").value = producto.LOTE_ID;
+
+        let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
+        modal.show();
+      }
+
+      /*function eliminarProducto(id) {
+        // 1. Pedimos confirmación al usuario
+        if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+
+          // 2. Preparamos el ID para enviarlo por POST (como lo espera tu PHP)
+          let formData = new FormData();
+          formData.append('id', id);
+
+          // 3. Hacemos la petición al archivo correcto
+          fetch('EliminarProducto.php', {
+            method: 'POST',
+            body: formData
+          })
+            .then(response => {
+              // Si el servidor no responde con un "OK" (ej. error 404 o 500), lanzamos error
+              if (!response.ok) {
+                throw new Error("Error en la respuesta del servidor");
+              }
+              // Convertimos la respuesta a JSON
+              return response.json();
+            })
+            .then(data => {
+              if (data.success) {
+
+                // 4. ÉXITO: Buscamos la fila en la tabla usando el ID dinámico y la borramos
+                let fila = document.getElementById('fila-producto-' + id);
+                if (fila) {
+                  fila.remove();
+                }
+
+              } else {
+                // El PHP devolvió success = false (ej. error de llaves foráneas)
+                alert("Error al eliminar el producto: " + data.message);
+              }
+            })
+            .catch(error => {
+              // 5. ERROR DE CONEXIÓN O DE LECTURA DE JSON
+              console.error("Detalle del error:", error);
+              alert("Hubo un problema de conexión al intentar eliminar.");
+            });
+        }
+      }
+      */
+
+      //AGREGAR NUEVA MARCA
+      const selectMarca = document.getElementById("marca");
+      const contenedorNuevaMarca = document.getElementById("contenedorNuevaMarca");
+      const inputNuevaMarca = document.getElementById("nuevaMarca");
+      selectMarca.addEventListener("change", function () {
+
+        if (this.value === "nueva") {
+          contenedorNuevaMarca.style.display = "block";
+          inputNuevaMarca.setAttribute("required", "true");
+        } else {
+          contenedorNuevaMarca.style.display = "none";
+          inputNuevaMarca.removeAttribute("required");
+          inputNuevaMarca.value = "";
         }
 
-        //esto valida que se seleccionen fechas
-        const inicio = document.getElementById("fecha_inicio");
-        const fin = document.getElementById("fecha_fin");
-        const btnPDF = document.getElementById("btnPDF");
-        function validarFechas() {
-          if (inicio.value !== "" && fin.value !== "") {
+      });
+
+      //Producto por codigo de barras al generar stock
+      document.getElementById("codigo_barras").addEventListener("keyup", function () {
+        let codigo = this.value.trim();
+        if (codigo.length < 3) return;
+
+        fetch("buscarProductoPorCodigo.php?codigo=" + codigo)
+        .then(res => res.json())
+        .then(data => {
+
+          if (data.success) {
+
+            // SETEAR PRODUCTO
+            document.getElementById("producto").innerHTML =
+            `<option value="${data.producto.PRODUCTO_ID}" selected>
+              ${data.producto.NOMBRE}
+            </option>`;
+
+            // SETEAR PROVEEDOR
+            document.getElementById("proveedor").value = data.producto.PROVEEDOR_ID;
+
+          }
+        });
+      });
+
+      ///FUNCION PARA BUSCAR REPORTE BY JACK NICHOLSON
+      function buscarReporte() {
+        let inicio = document.getElementById("fecha_inicio").value;
+        let fin = document.getElementById("fecha_fin").value;
+        let tipo = document.getElementById("tipo").value;
+        let btnPDF = document.getElementById("btnPDF");
+
+        fetch(`reporte.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`)
+        .then(res => res.text())
+        .then(data => {
+          document.getElementById("tabla_reporte").innerHTML = data;
+
+          if (inicio !== "" && fin !== "" && data.trim() !== "") {
             btnPDF.disabled = false;
           } else {
             btnPDF.disabled = true;
           }
-        }
+        });
+      }
 
-        inicio.addEventListener("change", validarFechas);
-        fin.addEventListener("change", validarFechas);
-      </script>
+      //ESTE SCRIPT SE ASEGURA QUE EL PROVEEDOR SE SELECCIONE PRIMERO
+      const proveedor = document.getElementById("proveedor");
+      const producto = document.getElementById("producto");
+      if (proveedor && producto) {
+        proveedor.addEventListener("change", function () {
+
+          let proveedorId = this.value;
+
+          producto.innerHTML = '<option value="">Cargando...</option>';
+          producto.disabled = true;
+
+          if (proveedorId === "") {
+            producto.innerHTML = '<option value="">Selecciona primero un proveedor</option>';
+            return;
+          }
+
+          fetch("obtenerProductosStock.php?proveedor_id=" + proveedorId)
+          .then(response => response.text())
+          .then(data => {
+            producto.innerHTML = data;
+            producto.disabled = false;
+          });
+        });
+      }
+
+      //esto imprme el pdf
+      function generarPDF() {
+        let inicio = document.getElementById("fecha_inicio").value;
+        let fin = document.getElementById("fecha_fin").value;
+        let tipo = document.getElementById("tipo").value;
+
+        window.open(`reporte_pdf.php?inicio=${inicio}&fin=${fin}&tipo=${tipo}`, '_blank');
+      }
+
+      //esto valida que se seleccionen fechas
+      const inicio = document.getElementById("fecha_inicio");
+      const fin = document.getElementById("fecha_fin");
+      const btnPDF = document.getElementById("btnPDF");
+      function validarFechas() {
+        if (inicio.value !== "" && fin.value !== "") {
+          btnPDF.disabled = false;
+        } else {
+          btnPDF.disabled = true;
+        }
+      }
+
+      inicio.addEventListener("change", validarFechas);
+      fin.addEventListener("change", validarFechas);
+    </script>
   </body>
 
 </html>
