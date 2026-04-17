@@ -25,12 +25,13 @@
     SELECT p.NOMBRE, s.UNIDADES
     FROM stock s
     INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
-    WHERE s.UNIDADES <= 50
+    WHERE p.ESTADO = 1
+    AND s.UNIDADES <= 50
   ");
 
   $productosBajoStock = [];
   while ($row = $stockBajo->fetch_assoc()) {
-    $productosBajoStock[] = $row['NOMBRE'] . " (" . $row['UNIDADES'] . ")";
+    $productosBajoStock[] = $row['NOMBRE'] . " (" . $row['UNIDADES'] . " / 50)";
   }
 
   // ================== VALIDAR SESIÓN ==================
@@ -519,6 +520,7 @@
       LEFT JOIN lotes l ON p.LOTE_ID = l.LOTE_ID
       INNER JOIN almacenes a ON s.ALMACEN_ID = a.ALMACEN_ID
       INNER JOIN ubicaciones u ON s.UBICACION_ID = u.UBICACION_ID
+      WHERE p.ESTADO = 1
       LIMIT $offset_stock, $registros_por_pagina_stock
     ");
 
