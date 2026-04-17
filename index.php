@@ -205,12 +205,15 @@
   //================== EDITAR PRODUCTO ==================
   if (isset($_POST['form_editar_producto'])) {
 
-    $id = $_POST['PRODUCTO_ID'];
+    $id = intval($_POST['PRODUCTO_ID']);
     $nombre = $_POST['NOMBRE'];
     $precio = $_POST['PRECIO'];
     $marca = $_POST['MARCA_ID'];
     $categoria = $_POST['CATEGORIA_ID'];
-    $proveedor = $_POST['PROVEEDOR_ID'];
+    $proveedor = intval($_POST['PROVEEDOR_ID']);
+    if ($id <= 0) {
+      die("Error: ID de producto inválido");
+    }
     $lote = $_POST['LOTE_ID'];
 
     // ================== VALIDAR MOVIMIENTOS ==================
@@ -255,12 +258,41 @@
     );
 
     if ($stmt->execute()) {
+      // VALIDAR QUE EL PRODUCTO EXISTE
+      $checkProducto = $conn->prepare("SELECT PRODUCTO_ID FROM productos WHERE PRODUCTO_ID = ?");
+      $checkProducto->bind_param("i", $id);
+      $checkProducto->execute();
+      $resCheck = $checkProducto->get_result();
+
+      if ($resCheck->num_rows === 0) {
+        die("Error: el producto no existe en la BD");
+      }
 
       // ================== REGISTRAR MOVIMIENTO (EDICIÓN) ==================
       $fecha = date("Y-m-d H:i:s");
       $tipo = 5;
       $cantidad = 0;
       $usuario = $_SESSION['ID_USUARIO'];
+
+      $getProv = $conn->prepare("SELECT PROVEEDOR_ID FROM productos WHERE PRODUCTO_ID = ?");
+      $getProv->bind_param("i", $id);
+      $getProv->execute();
+      $resultado = $getProv->get_result();
+
+      $proveedor_real = 0; // valor seguro inicial
+
+      if ($resultado && $resultado->num_rows > 0) {
+        $resProv = $resultado->fetch_assoc();
+        
+        if (!empty($resProv['PROVEEDOR_ID'])) {
+          $proveedor_real = intval($resProv['PROVEEDOR_ID']);
+        }
+      }
+
+      //  VALIDACIÓN FINAL 
+      if ($proveedor_real <= 0) {
+        $proveedor_real = intval($proveedor);
+      }
 
       $mov = $conn->prepare("
         INSERT INTO movimientos
@@ -274,7 +306,7 @@
         $cantidad,
         $tipo,
         $usuario,
-        $proveedor,
+        $proveedor_real,
         $id
       );
 
@@ -899,10 +931,10 @@
           <!-- MENSAJES -->
             <!--MENSAJE PRODUCTO--->
             <?php if (isset($_SESSION['mensajeProducto'])): ?>
-            <div class="alert alert-<?= $_SESSION['tipoProducto']; ?>">
-              <?= $_SESSION['mensajeProducto']; ?>
-            </div>
-            <?php unset($_SESSION['mensajeProducto'], $_SESSION['tipoProducto']); ?>
+              <div class="alert alert-<?= $_SESSION['tipoProducto']; ?>">
+                <?= $_SESSION['mensajeProducto']; ?>
+              </div>
+              <?php unset($_SESSION['mensajeProducto'], $_SESSION['tipoProducto']); ?>
             <?php endif; ?>
             <!--Mensaje proveedor-->
             <?php if (isset($_SESSION['mensajeProveedor'])): ?>
@@ -951,80 +983,10 @@
                     <td><?= $p['PROVEEDOR']; ?></td>
 
                     <td class="text-center">
-                      <button class="btn btn-sm btn-warning" onclick='abrirModalEditar(<?= json_encode($p) ?>)'>
+                      <button class="btn btn-sm btn-warning"
+                        onclick="abrirModalEditar(<?= $p['PRODUCTO_ID'] ?>)">
                         <i class="bi bi-pencil"></i>
-                      </button>
-                      <div class="modal fade" id="modalEditarProducto" tabindex="-1">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                          <div class="modal-content">
-                            <form method="POST">
-                              <input type="hidden" name="form_editar_producto" value="1">
-                              <input type="hidden" name="PRODUCTO_ID" id="edit_id">
-
-                              <div class="modal-header">
-                                <h5 class="modal-title">Editar producto</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                              </div>
-
-                              <div class="modal-body">
-                                <div class="row">
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Nombre</label>
-                                    <input type="text" name="NOMBRE" id="edit_nombre" class="form-control">
-                                  </div>
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Precio</label>
-                                    <input type="number" name="PRECIO" id="edit_precio" class="form-control">
-                                  </div>
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Marca</label>
-                                    <select name="MARCA_ID" id="edit_marca" class="form-control">
-                                      <?php foreach ($marcas as $m): ?>
-                                        <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
-                                      <?php endforeach; ?>
-                                    </select>
-                                  </div>
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Categoría</label>
-                                    <select name="CATEGORIA_ID" id="edit_categoria" class="form-control">
-                                      <?php foreach ($categorias as $c): ?>
-                                        <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
-                                      <?php endforeach; ?>
-                                    </select>
-                                  </div>
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Proveedor</label>
-                                    <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
-                                      <?php foreach ($proveedores as $p_prov): ?>
-                                        <option value="<?= $p_prov['PROVEEDOR_ID'] ?>"><?= $p_prov['NOMBRE'] ?></option>
-                                      <?php endforeach; ?>
-                                    </select>
-                                  </div>
-
-                                  <div class="col-md-6 mb-3">
-                                    <label>Lote</label>
-                                    <select name="LOTE_ID" id="edit_lote" class="form-control">
-                                      <?php foreach ($lotes as $l): ?>
-                                        <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
-                                      <?php endforeach; ?>
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div class="modal-footer">
-                                <button type="submit" class="btn btn-success">Guardar cambios</button>
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
-                              </div>
-                            </form>
-                          </div>
-                        </div>
-                      </div>
+                      </button>   
 
                       <form method="POST" action="EliminarProducto.php" style="display:inline;">
                         <input type="hidden" name="id" value="<?= $p['PRODUCTO_ID']; ?>">
@@ -1034,12 +996,84 @@
                           <i class="bi bi-trash"></i>
                         </button>
                       </form>
-
                     </td>
                   </tr>
                 <?php endforeach; ?>
               </tbody>
             </table>
+            <!-- MODAL PARA EDITAR PRODUCTO -->
+            <div class="modal fade" id="modalEditarProducto" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                  <form method="POST">
+                    <input type="hidden" name="form_editar_producto" value="1">
+                    <input type="hidden" name="PRODUCTO_ID" id="edit_id">
+
+                    <div class="modal-header">
+                      <h5 class="modal-title">Editar producto</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                      <div class="row">
+
+                        <div class="col-md-6 mb-3">
+                          <label>Nombre</label>
+                          <input type="text" name="NOMBRE" id="edit_nombre" class="form-control">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Precio</label>
+                          <input type="number" name="PRECIO" id="edit_precio" class="form-control">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Marca</label>
+                          <select name="MARCA_ID" id="edit_marca" class="form-control">
+                            <?php foreach ($marcas as $m): ?>
+                              <option value="<?= $m['MARCA_ID'] ?>"><?= $m['NOMBRE'] ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Categoría</label>
+                          <select name="CATEGORIA_ID" id="edit_categoria" class="form-control">
+                            <?php foreach ($categorias as $c): ?>
+                              <option value="<?= $c['CATEGORIA_ID'] ?>"><?= $c['NOMBRE'] ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Proveedor</label>
+                          <select name="PROVEEDOR_ID" id="edit_proveedor" class="form-control">
+                            <?php foreach ($proveedores as $p_prov): ?>
+                              <option value="<?= $p_prov['PROVEEDOR_ID'] ?>"><?= $p_prov['NOMBRE'] ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label>Lote</label>
+                          <select name="LOTE_ID" id="edit_lote" class="form-control">
+                            <?php foreach ($lotes as $l): ?>
+                              <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-success">Guardar cambios</button>
+                      <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            
             <nav class="d-flex justify-content-center align-items-center gap-2 mt-3">
               <a class="btn btn-light <?= ($pagina_productos <= 1) ? 'disabled' : '' ?>"
                 href="?pagina_productos=<?= $pagina_productos - 1 ?>">
@@ -1427,6 +1461,23 @@
                       <td>${p.MARCA}</td>
                       <td>${p.CATEGORIA}</td>
                       <td>${p.PROVEEDOR}</td>
+
+                      <td class="text-center">
+
+                        <button class="btn btn-sm btn-warning"
+                          onclick="abrirModalEditar(${p.PRODUCTO_ID})">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+
+                        <form method="POST" action="EliminarProducto.php" style="display:inline;">
+                          <input type="hidden" name="id" value="${p.PRODUCTO_ID}">
+                          <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('¿Estás seguro de eliminar este producto?');">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+
+                      </td>
                     </tr>
                   `;
                 });
@@ -1435,6 +1486,8 @@
             });
           });
         }
+
+        
 
         // ================= BUSCADOR USUARIOS =================
         const buscadorUsuario = document.getElementById("buscadorUsuario");
@@ -1461,6 +1514,15 @@
                 html = `<tr><td colspan="8">No hay usuarios</td></tr>`;
               } else {
                 data.forEach((u, index) => {
+
+                  let rolBadge = u.ROL === 'admin'
+                    ? `<span class="badge bg-primary">admin</span>`
+                    : `<span class="badge bg-secondary">empleado</span>`;
+
+                  let estadoBadge = u.ESTADO === 'activo'
+                    ? `<span class="badge bg-success">activo</span>`
+                  : `<span class="badge bg-danger">inactivo</span>`;
+
                   html += `
                     <tr>
                       <td>${index + 1}</td>
@@ -1468,8 +1530,21 @@
                       <td>${u.APELLIDO_P}</td>
                       <td>${u.APELLIDO_M}</td>
                       <td>${u.CORREO}</td>
-                      <td>${u.ROL}</td>
-                      <td>${u.ESTADO}</td>
+
+                      <td>${rolBadge}</td>
+                      <td>${estadoBadge}</td>
+
+                      <td class="text-center">
+                        <button class="btn btn-sm btn-warning"
+                          onclick="window.location.href='Admin/editarPerfilUsuarios.php?id=${u.ID_USUARIO}'">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-danger"
+                          onclick="if(confirm('¿Eliminar usuario?')) { window.location.href='Admin/eliminarPerfil.php?PRODUCTO_ID=${u.ID_USUARIO}'; }">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </td>
                     </tr>
                   `;
                 });
@@ -1479,7 +1554,7 @@
           });
         }
       });
-
+      
       //Lote de producto ubicado por categoria 
       document.getElementById('categoria').addEventListener('change', function () {
         let categoria_id = this.value;
@@ -1561,19 +1636,108 @@
         });
       }
 
-      function abrirModalEditar(producto) {
-        document.getElementById("edit_id").value = producto.PRODUCTO_ID;
-        document.getElementById("edit_nombre").value = producto.NOMBRE;
-        document.getElementById("edit_precio").value = producto.PRECIO;
+      // Para que funcionen las acciones de editar producto y eliminar al buscar el producto
+        function eliminarProducto(id) {
 
-        document.getElementById("edit_marca").value = producto.MARCA_ID;
-        document.getElementById("edit_categoria").value = producto.CATEGORIA_ID;
-        document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID;
-        document.getElementById("edit_lote").value = producto.LOTE_ID;
+          if (!confirm("¿Eliminar producto?")) return;
 
-        let modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
-        modal.show();
-      }
+          let formData = new FormData();
+          formData.append("id", id);
+
+          fetch("EliminarProducto.php", {
+            method: "POST",
+            body: formData
+          })
+          .then(res => res.text())
+          .then(() => {
+            alert("Producto eliminado correctamente");
+            location.reload();
+          })
+          .catch(() => {
+            alert("Error al eliminar");
+          });
+        }
+
+        function cargarLotesEditar(categoria_id, loteSeleccionado = null) {
+
+          const loteEdit = document.getElementById('edit_lote');
+          if (!loteEdit) return;
+
+          loteEdit.innerHTML = '<option value="">Cargando...</option>';
+
+          fetch('obtener_lotes.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'categoria_id=' + categoria_id
+          })
+          .then(response => response.text())
+          .then(data => {
+            loteEdit.innerHTML = data;
+
+            // mantener lote seleccionado
+            if (loteSeleccionado) {
+              loteEdit.value = loteSeleccionado;
+            }
+          })
+          .catch(() => {
+            loteEdit.innerHTML = '<option value="">Error al cargar</option>';
+          });
+        }
+
+        function abrirModalEditar(producto) {
+
+          const modal = new bootstrap.Modal(document.getElementById("modalEditarProducto"));
+          modal.show();
+
+          // ================= SI VIENE SOLO ID =================
+          if (!isNaN(producto)) {
+
+            fetch("obtenerProducto.php?id=" + producto)
+              .then(res => res.json())
+              .then(data => {
+
+                document.getElementById("edit_id").value = data.PRODUCTO_ID;
+
+                document.getElementById("edit_nombre").value = data.NOMBRE || "";
+                document.getElementById("edit_precio").value = data.PRECIO || "";
+
+                document.getElementById("edit_marca").value = data.MARCA_ID || "";
+                document.getElementById("edit_categoria").value = data.CATEGORIA_ID || "";
+                document.getElementById("edit_proveedor").value = data.PROVEEDOR_ID || "";
+
+                // 🔥 AQUÍ ESTÁ LA MAGIA
+                cargarLotesEditar(data.CATEGORIA_ID, data.LOTE_ID);
+
+              })
+              .catch(err => {
+                console.error("Error:", err);
+              });
+
+            return;
+          }
+
+          // ================= SI YA VIENE OBJETO =================
+
+          document.getElementById("edit_id").value = producto.PRODUCTO_ID || "";
+
+          document.getElementById("edit_nombre").value = producto.NOMBRE || "";
+          document.getElementById("edit_precio").value = producto.PRECIO || "";
+
+          document.getElementById("edit_marca").value = producto.MARCA_ID || "";
+          document.getElementById("edit_categoria").value = producto.CATEGORIA_ID || "";
+          document.getElementById("edit_proveedor").value = producto.PROVEEDOR_ID || "";
+
+          // MISMA MAGIA AQUÍ
+          cargarLotesEditar(producto.CATEGORIA_ID, producto.LOTE_ID);
+        }
+      //FIN
+
+      document.getElementById('edit_categoria').addEventListener('change', function () {
+        let categoria_id = this.value;
+        cargarLotesEditar(categoria_id);
+      });
 
       /*function eliminarProducto(id) {
         // 1. Pedimos confirmación al usuario

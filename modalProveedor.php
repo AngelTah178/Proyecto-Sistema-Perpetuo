@@ -19,7 +19,7 @@
 
             <div class="col-md-6 mb-3">
               <label class="form-label">Teléfono</label>
-              <input type="text" name="TELEFONO" class="form-control input-pro">
+              <input type="tel" name="TELEFONO" class="form-control input-pro">
             </div>
 
             <div class="col-md-6 mb-3">
