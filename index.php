@@ -21,17 +21,21 @@
     exit();
   }
 
+  
+  $stock_minimo = $_POST['STOCK_MINIMO'] ?? 50;
+
   $stockBajo = $conn->query("
     SELECT p.NOMBRE, s.UNIDADES
     FROM stock s
     INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE p.ESTADO = 1
-    AND s.UNIDADES <= 50
+    AND s.UNIDADES <= p.STOCK_MINIMO
   ");
 
   $productosBajoStock = [];
   while ($row = $stockBajo->fetch_assoc()) {
-    $productosBajoStock[] = $row['NOMBRE'] . " (" . $row['UNIDADES'] . " / 50)";
+    $productosBajoStock[] = $row['NOMBRE'] . 
+    " (" . $row['UNIDADES'] . "/" . $row['STOCK_MINIMO'] . ")";
   }
 
   // ================== VALIDAR SESIÓN ==================
@@ -103,12 +107,12 @@
 
         $stmt = $conn->prepare("
           INSERT INTO productos 
-          (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID) 
+          (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID, STOCK_MINIMO)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->bind_param(
-          "ssssdsiiii",
+          "ssssdsiiiii",
           $CODIGO_BARRAS,
           $SKU,
           $NOMBRE,
@@ -118,7 +122,8 @@
           $LOTE_ID,
           $MARCA_ID,
           $CATEGORIA_ID,
-          $PROVEEDOR_ID
+          $PROVEEDOR_ID,
+          $STOCK_MINIMO
         );
 
         if ($stmt->execute()) {
@@ -894,7 +899,10 @@
                             </div>
                           </div>
 
-
+                          <div class="col-md-6 mb-3">
+                            <label class="form-label">Stock mínimo</label>
+                            <input type="number" name="STOCK_MINIMO" class="form-control input-pro" min="0" value="50" required>
+                          </div>
 
                           <div class="col-md-6 mb-3">
                             <label class="form-label">Proveedor</label>
@@ -1063,6 +1071,11 @@
                               <option value="<?= $l['LOTE_ID'] ?>"><?= $l['LOTE_ID'] ?></option>
                             <?php endforeach; ?>
                           </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Stock mínimo</label>
+                          <input type="number" name="STOCK_MINIMO" class="form-control input-pro" min="0" value="50" required>
                         </div>
                       </div>
                     </div>
