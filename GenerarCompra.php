@@ -1,139 +1,204 @@
 <?php
-session_start();
-include "conexion.php";
+  session_start();
+  include "conexion.php";
 
-date_default_timezone_set('America/Cancun');
+  date_default_timezone_set('America/Cancun');
 
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
-  header("Location: login.php");
-  exit;
-}
-
-if (!isset($_SESSION['orden'])) {
-  $_SESSION['orden'] = [];
-}
-
-if (isset($_POST['agregar'])) {
-  $producto_id = $_POST['PRODUCTO_ID'];
-  $proveedor_id = $_POST['PROVEEDOR_ID'];
-  $almacen_id = $_POST['ALMACEN_ID'];
-  $unidades = $_POST['UNIDADES'];
-
-  $_SESSION['proveedor_id'] = $proveedor_id;
-  $_SESSION['almacen_id'] = $almacen_id;
-
-  $stmt = $conn->prepare("SELECT PRODUCTO_ID, NOMBRE, PRECIO FROM productos WHERE PRODUCTO_ID = ?");
-  $stmt->bind_param("i", $producto_id);
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $producto = $result->fetch_assoc();
-
-  $total = $producto['PRECIO'] * $unidades;
-
-  $_SESSION['orden'][] = [
-    'producto_id' => $producto['PRODUCTO_ID'],
-    'producto' => $producto['NOMBRE'],
-    'precio' => $producto['PRECIO'],
-    'unidades' => $unidades,
-    'total' => $total
-  ];
-
-  header("Location: " . $_SERVER['PHP_SELF']);
-  exit;
-}
-
-if (isset($_GET['limpiar'])) {
-  unset($_SESSION['orden']);
-  unset($_SESSION['proveedor_id']);
-  unset($_SESSION['almacen_id']);
-  header("Location: GenerarCompra.php");
-  exit;
-}
-
-if (isset($_GET['eliminar'])) {
-  $index = $_GET['eliminar'];
-
-  if (isset($_SESSION['orden'][$index])) {
-    unset($_SESSION['orden'][$index]);
-    $_SESSION['orden'] = array_values($_SESSION['orden']);
+  if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+    header("Location: login.php");
+    exit;
   }
 
-  header("Location: " . $_SERVER['PHP_SELF']);
-  exit;
-}
-
-if (isset($_POST['confirmar'])) {
-  if (empty($_SESSION['orden'])) {
-    die("No hay productos en la orden");
+  if (!isset($_SESSION['orden'])) {
+    $_SESSION['orden'] = [];
   }
 
-  if (!isset($_SESSION['proveedor_id']) || !isset($_SESSION['almacen_id'])) {
-    die("Faltan datos de proveedor o almacén");
-  }
+  /* AGREGAR A ORDEN */
+  if (isset($_POST['agregar'])) {
 
-  $proveedor_id = $_SESSION['proveedor_id'];
-  $almacen_id = $_SESSION['almacen_id'];
+    $producto_id = $_POST['PRODUCTO_ID'];
+    $proveedor_id = $_POST['PROVEEDOR_ID'];
+    $almacen_id = $_POST['ALMACEN_ID'];
+    $unidades = $_POST['UNIDADES'];
 
-  $conn->begin_transaction();
-  try {
-    foreach ($_SESSION['orden'] as $item) {
-      $producto_id = $item['producto_id'];
-      $unidades = $item['unidades'];
-      $fecha = date('Y-m-d H:i:s');
-      $usuario = $_SESSION['ID_USUARIO'];
+    $_SESSION['proveedor_id'] = $proveedor_id;
+    $_SESSION['almacen_id'] = $almacen_id;
 
-      $stockStmt = $conn->prepare(
-        "SELECT STOCK_ID, UNIDADES FROM stock WHERE PRODUCTO_ID = ?"
-      );
-      $stockStmt->bind_param("i", $producto_id);
-      $stockStmt->execute();
-      $stockResult = $stockStmt->get_result();
+    // 🔥 VALIDAR PRODUCTO ACTIVO (IMPORTANTE)
+    $check = $conn->prepare("
+      SELECT PRODUCTO_ID, NOMBRE, PRECIO
+      FROM productos
+      WHERE PRODUCTO_ID = ?
+      AND ESTADO = 1
+    ");
 
-      if ($stockResult->num_rows == 0) {
-        throw new Exception("No hay stock para el producto: " . $item['producto']);
-      }
+    $check->bind_param("i", $producto_id);
+    $check->execute();
+    $res = $check->get_result();
 
-      $stock = $stockResult->fetch_assoc();
-
-      if ($stock['UNIDADES'] < $unidades) {
-        throw new Exception("No hay suficiente stock para el producto: " . $item['producto']);
-      }
-
-      $nuevo_stock = $stock['UNIDADES'] - $unidades;
-
-      $updateStock = $conn->prepare(
-        "UPDATE stock SET UNIDADES = ?, FECHA_REGISTRO = ? WHERE STOCK_ID = ?"
-      );
-      $updateStock->bind_param("isi", $nuevo_stock, $fecha, $stock['STOCK_ID']);
-      $updateStock->execute();
-
-      $movimientos = $conn->prepare(
-        "INSERT INTO movimientos
-          (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID)
-          VALUES (?,?,?,?,?,?,?)"
-      );
-      $tipo = 2;
-      $movimientos->bind_param("siiiiii", $fecha, $unidades, $tipo, $usuario, $proveedor_id, $producto_id, $almacen_id);
-      $movimientos->execute();
+    if ($res->num_rows === 0) {
+      $_SESSION['mensaje'] = "Producto eliminado o inactivo";
+      $_SESSION['tipo'] = "danger";
+      header("Location: GenerarCompra.php");
+      exit;
     }
 
-    $conn->commit();
+    $producto = $res->fetch_assoc();
+
+    $total = $producto['PRECIO'] * $unidades;
+
+    $_SESSION['orden'][] = [
+      'producto_id' => $producto['PRODUCTO_ID'],
+      'producto' => $producto['NOMBRE'],
+      'precio' => $producto['PRECIO'],
+      'unidades' => $unidades,
+      'total' => $total
+    ];
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+  }
+
+  /* LIMPIAR ORDEN */
+  if (isset($_GET['limpiar'])) {
     unset($_SESSION['orden']);
     unset($_SESSION['proveedor_id']);
     unset($_SESSION['almacen_id']);
-    header("location: GenerarCompra.php?ok=1");
-    $_SESSION['mensaje'] = "Orden de compra generada correctamente";
-    $_SESSION['tipo'] = "success";
+    header("Location: GenerarCompra.php");
     exit;
-  } catch (Exception $e) {
-    $conn->rollback();
-    $_SESSION['mensaje'] = "Error al generar la orden: " . $e->getMessage();
-    $_SESSION['tipo'] = "danger";
   }
 
-  header("Location: GenerarCompra.php");
-  exit;
-}
+  /* ELIMINAR ITEM */
+  if (isset($_GET['eliminar'])) {
+    $index = $_GET['eliminar'];
+
+    if (isset($_SESSION['orden'][$index])) {
+      unset($_SESSION['orden'][$index]);
+      $_SESSION['orden'] = array_values($_SESSION['orden']);
+    }
+
+    header("Location: GenerarCompra.php");
+    exit;
+  }
+
+  /* CONFIRMAR VENTA */
+  if (isset($_POST['confirmar'])) {
+
+    if (empty($_SESSION['orden'])) {
+      die("No hay productos en la orden");
+    }
+
+    if (!isset($_SESSION['proveedor_id']) || !isset($_SESSION['almacen_id'])) {
+      die("Faltan datos de proveedor o almacén");
+    }
+
+    $proveedor_id = $_SESSION['proveedor_id'];
+    $almacen_id = $_SESSION['almacen_id'];
+
+    $conn->begin_transaction();
+
+    try {
+
+      foreach ($_SESSION['orden'] as $item) {
+
+        $producto_id = $item['producto_id'];
+        $unidades = $item['unidades'];
+        $fecha = date('Y-m-d H:i:s');
+        $usuario = $_SESSION['ID_USUARIO'];
+
+        // VALIDAR PRODUCTO ACTIVO (CRÍTICO)
+        $checkProducto = $conn->prepare("
+          SELECT PRODUCTO_ID
+          FROM productos
+          WHERE PRODUCTO_ID = ?
+          AND ESTADO = 1
+        ");
+
+        $checkProducto->bind_param("i", $producto_id);
+        $checkProducto->execute();
+        $r = $checkProducto->get_result();
+
+        if ($r->num_rows === 0) {
+          throw new Exception("Producto eliminado dentro de la orden: " . $item['producto']);
+        }
+
+        // STOCK
+        $stockStmt = $conn->prepare("
+          SELECT STOCK_ID, UNIDADES
+          FROM stock
+          WHERE PRODUCTO_ID = ?
+        ");
+
+        $stockStmt->bind_param("i", $producto_id);
+        $stockStmt->execute();
+        $stockResult = $stockStmt->get_result();
+
+        if ($stockResult->num_rows == 0) {
+          throw new Exception("No hay stock para: " . $item['producto']);
+        }
+
+        $stock = $stockResult->fetch_assoc();
+
+        if ($stock['UNIDADES'] < $unidades) {
+          throw new Exception("Stock insuficiente para: " . $item['producto']);
+        }
+
+        $nuevo_stock = $stock['UNIDADES'] - $unidades;
+
+        $updateStock = $conn->prepare("
+          UPDATE stock
+          SET UNIDADES = ?, FECHA_REGISTRO = ?
+          WHERE STOCK_ID = ?
+        ");
+
+        $updateStock->bind_param("isi", $nuevo_stock, $fecha, $stock['STOCK_ID']);
+        $updateStock->execute();
+
+        $tipo = 2;
+
+        $mov = $conn->prepare("
+          INSERT INTO movimientos
+          (FECHA_REGISTRO, CANTIDAD, TIPO_ID, ID_USUARIO, PROVEEDOR_ID, PRODUCTO_ID, ALMACEN_ID)
+          VALUES (?,?,?,?,?,?,?)
+        ");
+
+        $mov->bind_param(
+          "siiiiii",
+          $fecha,
+          $unidades,
+          $tipo,
+          $usuario,
+          $proveedor_id,
+          $producto_id,
+          $almacen_id
+        );
+
+        $mov->execute();
+      }
+
+      $conn->commit();
+
+      unset($_SESSION['orden']);
+      unset($_SESSION['proveedor_id']);
+      unset($_SESSION['almacen_id']);
+
+      $_SESSION['mensaje'] = "Orden generada correctamente";
+      $_SESSION['tipo'] = "success";
+
+      header("Location: GenerarCompra.php");
+      exit;
+
+    } catch (Exception $e) {
+
+      $conn->rollback();
+
+      $_SESSION['mensaje'] = "Error: " . $e->getMessage();
+      $_SESSION['tipo'] = "danger";
+
+      header("Location: GenerarCompra.php");
+      exit;
+    }
+  }
 ?>
 
 <html lang="en">
@@ -319,36 +384,36 @@ if (isset($_POST['confirmar'])) {
         if (valor.length < 3) return;
 
         fetch("buscarProductoCodigo.php?codigo=" + encodeURIComponent(valor))
-          .then(res => res.json())
-          .then(data => {
+        .then(res => res.json())
+        .then(data => {
 
-            if (!data || data.length === 0) {
-              document.getElementById("nombre_producto").value = "";
-              document.getElementById("proveedor_nombre").value = "";
-              document.getElementById("almacen").innerHTML = '<option>No encontrado</option>';
-              return;
+          if (!data || data.length === 0) {
+            document.getElementById("nombre_producto").value = "";
+            document.getElementById("proveedor_nombre").value = "";
+            document.getElementById("almacen").innerHTML = '<option>No encontrado</option>';
+            return;
+          }
+
+          // PRODUCTO Y PROVEEDOR
+          document.getElementById("nombre_producto").value = data[0].NOMBRE;
+          document.getElementById("proveedor_nombre").value = data[0].PROVEEDOR;
+
+          document.getElementById("producto_id").value = data[0].PRODUCTO_ID;
+          document.getElementById("proveedor_id").value = data[0].PROVEEDOR_ID;
+
+          // ALMACENES
+          let select = document.getElementById("almacen");
+          select.innerHTML = '<option value="">Selecciona almacén</option>';
+
+          data.forEach(item => {
+            if (item.ALMACEN_ID) {
+              select.innerHTML += `
+                <option value="${item.ALMACEN_ID}">
+                  ${item.ALMACEN} (Stock: ${item.UNIDADES})
+                </option>
+              `;
             }
-
-            // PRODUCTO Y PROVEEDOR
-            document.getElementById("nombre_producto").value = data[0].NOMBRE;
-            document.getElementById("proveedor_nombre").value = data[0].PROVEEDOR;
-
-            document.getElementById("producto_id").value = data[0].PRODUCTO_ID;
-            document.getElementById("proveedor_id").value = data[0].PROVEEDOR_ID;
-
-            // ALMACENES
-            let select = document.getElementById("almacen");
-            select.innerHTML = '<option value="">Selecciona almacén</option>';
-
-            data.forEach(item => {
-              if (item.ALMACEN_ID) {
-                select.innerHTML += `
-                  <option value="${item.ALMACEN_ID}">
-                    ${item.ALMACEN} (Stock: ${item.UNIDADES})
-                  </option>
-                `;
-              }
-            });
+          });
 
           });
 
