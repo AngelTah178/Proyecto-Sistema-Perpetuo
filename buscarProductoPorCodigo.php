@@ -14,11 +14,19 @@
   }
 
   $stmt = $conn->prepare("
-      SELECT PRODUCTO_ID, NOMBRE, PROVEEDOR_ID
-      FROM productos
-      WHERE CODIGO_BARRAS = ?
-      AND ESTADO = 1
-  ");
+        SELECT 
+            p.PRODUCTO_ID,
+            p.NOMBRE,
+            p.PROVEEDOR_ID,
+            s.ALMACEN_ID
+        FROM productos p
+        LEFT JOIN stock s 
+            ON s.PRODUCTO_ID = p.PRODUCTO_ID
+        WHERE p.CODIGO_BARRAS = ?
+        AND p.ESTADO = 1
+        ORDER BY s.UNIDADES DESC
+        LIMIT 1
+    ");
 
   $stmt->bind_param("s", $codigo);
   $stmt->execute();

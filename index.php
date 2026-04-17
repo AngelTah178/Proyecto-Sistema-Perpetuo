@@ -1861,12 +1861,19 @@
 
             document.getElementById("proveedor").value = data.producto.PROVEEDOR_ID;
 
-          } else {
+            const almacen = document.querySelector('[name="ALMACEN_ID"]');
+            if (almacen && data.producto.ALMACEN_ID) {
+              almacen.value = data.producto.ALMACEN_ID;
+            }
 
+          } else {
             document.getElementById("producto").innerHTML =
               `<option value="">Producto no disponible</option>`;
 
             document.getElementById("proveedor").value = "";
+
+            const almacen = document.querySelector('[name="ALMACEN_ID"]');
+            if (almacen) almacen.value = "";
           }
         });
       });
