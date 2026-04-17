@@ -19,12 +19,12 @@
 
             <div class="col-md-6 mb-3">
               <label class="form-label">Teléfono</label>
-              <input type="tel" name="TELEFONO" class="form-control input-pro">
+              <input type="tel" name="TELEFONO" class="form-control input-pro"  pattern="[0-9]{10}"  maxlength="10" inputmode="numeric" placeholder="Ej: 9981234567" required>
             </div>
 
             <div class="col-md-6 mb-3">
               <label class="form-label">Correo</label>
-              <input type="email" name="CORREO" class="form-control input-pro">
+              <input type="email" name="CORREO" class="form-control input-pro" placeholder="correo@gmail.com" required>
             </div>
 
             <div class="col-md-6 mb-3">
