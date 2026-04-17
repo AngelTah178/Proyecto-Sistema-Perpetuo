@@ -277,7 +277,7 @@
             <!-- UNIDADES -->
             <div class="mb-3">
               <label class="form-label">Unidades</label>
-              <input type="number" name="UNIDADES" class="form-control input-pro" required>
+              <input type="number" min= "0" name="UNIDADES" class="form-control input-pro" required>
             </div>
 
             <button type="submit" name="agregar" class="btn btn-success w-100">

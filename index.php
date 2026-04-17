@@ -50,7 +50,10 @@
   $STOCK_MINIMO = $_POST["STOCK_MINIMO"] ?? 50;
 
   $stockBajo = $conn->query("
-    SELECT p.NOMBRE, s.UNIDADES
+    SELECT 
+      p.NOMBRE,
+      p.STOCK_MINIMO,
+      s.UNIDADES
     FROM stock s
     INNER JOIN productos p ON s.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE p.ESTADO = 1
