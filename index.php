@@ -22,7 +22,7 @@
   }
 
   
-  $stock_minimo = $_POST['STOCK_MINIMO'] ?? 50;
+  $STOCK_MINIMO = $_POST["STOCK_MINIMO"] ?? 50;
 
   $stockBajo = $conn->query("
     SELECT p.NOMBRE, s.UNIDADES
@@ -108,7 +108,7 @@
         $stmt = $conn->prepare("
           INSERT INTO productos 
           (CODIGO_BARRAS, SKU, NOMBRE, DESCRIPCION, PRECIO, FECHA_REGISTRO, LOTE_ID, MARCA_ID, CATEGORIA_ID, PROVEEDOR_ID, STOCK_MINIMO)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->bind_param(
@@ -854,7 +854,7 @@
 
                           <div class="col-md-6 mb-3">
                             <label class="form-label">Precio</label>
-                            <input type="number" step="0.01" min="0" name="PRECIO" class="form-control input-pro" required>
+                            <input type="number" step="0.01" min="0.01" name="PRECIO" class="form-control input-pro" required>
                           </div>
 
                           <div class="col-12 mb-3">
@@ -1034,7 +1034,7 @@
 
                         <div class="col-md-6 mb-3">
                           <label>Precio</label>
-                          <input type="number" name="PRECIO" id="edit_precio" class="form-control">
+                          <input type="number" step="0.01" min="0.01" name="PRECIO" id="edit_precio" class="form-control">
                         </div>
 
                         <div class="col-md-6 mb-3">
