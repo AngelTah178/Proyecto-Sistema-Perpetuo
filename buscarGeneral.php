@@ -21,8 +21,11 @@
     LEFT JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
     LEFT JOIN proveedores pr ON p.PROVEEDOR_ID = pr.PROVEEDOR_ID
     WHERE 
+    p.ESTADO = 1
+    AND (
       p.NOMBRE LIKE ? 
       OR p.CODIGO_BARRAS LIKE ?
+    )
   ");
 
   $like = "%$q%";
