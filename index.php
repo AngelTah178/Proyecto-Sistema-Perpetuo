@@ -5,19 +5,44 @@
   include "Stock.php";
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_existencas'])) {
-    try {
-      guardarStock($conn);
 
-      $_SESSION['mensaje'] = "Stock agregado correctamente";
-      $_SESSION['tipo'] = "success";
+  $producto_id = $_POST['PRODUCTO_ID'];
 
-    } catch (Exception $e) {
+  // AQUÍ SE CREA SIEMPRE
+  $checkProducto = $conn->prepare("
+    SELECT PRODUCTO_ID 
+    FROM productos 
+    WHERE PRODUCTO_ID = ? AND ESTADO = 1
+  ");
 
-      $_SESSION['mensaje'] = $e->getMessage();
-      $_SESSION['tipo'] = "danger";
-    }
+  if (!$checkProducto) {
+    die("Error en prepare: " . $conn->error);
+  }
 
+  $checkProducto->bind_param("i", $producto_id);
+  $checkProducto->execute();
+  $res = $checkProducto->get_result();
+
+  if ($res->num_rows === 0) {
+    $_SESSION['mensaje'] = "No puedes registrar stock de un producto eliminado o inexistente";
+    $_SESSION['tipo'] = "danger";
     header("Location: index.php");
+    exit();
+  }
+
+  try {
+    guardarStock($conn);
+
+    $_SESSION['mensaje'] = "Stock agregado correctamente";
+    $_SESSION['tipo'] = "success";
+
+  } catch (Exception $e) {
+
+    $_SESSION['mensaje'] = $e->getMessage();
+    $_SESSION['tipo'] = "danger";
+  }
+
+  header("Location: index.php");
     exit();
   }
 
@@ -1824,17 +1849,21 @@
         .then(res => res.json())
         .then(data => {
 
-          if (data.success) {
+          if (data.success && data.producto) {
 
-            // SETEAR PRODUCTO
             document.getElementById("producto").innerHTML =
-            `<option value="${data.producto.PRODUCTO_ID}" selected>
-              ${data.producto.NOMBRE}
-            </option>`;
+              `<option value="${data.producto.PRODUCTO_ID}" selected>
+                ${data.producto.NOMBRE}
+              </option>`;
 
-            // SETEAR PROVEEDOR
             document.getElementById("proveedor").value = data.producto.PROVEEDOR_ID;
 
+          } else {
+
+            document.getElementById("producto").innerHTML =
+              `<option value="">Producto no disponible</option>`;
+
+            document.getElementById("proveedor").value = "";
           }
         });
       });

@@ -17,6 +17,22 @@ function guardarStock($conn)
     }
 
     $producto_id = $_POST['PRODUCTO_ID'];
+    // ================== VALIDAR PRODUCTO ACTIVO ==================
+    $check = $conn->prepare("
+        SELECT 1 
+        FROM productos 
+        WHERE PRODUCTO_ID = ? 
+        AND ESTADO = 1
+        LIMIT 1
+    ");
+
+    $check->bind_param("i", $producto_id);
+    $check->execute();
+    $res = $check->get_result();
+
+    if ($res->num_rows === 0) {
+        throw new Exception("No puedes registrar stock de un producto eliminado o inactivo");
+    }
     $almacen_id = $_POST['ALMACEN_ID'];
     $proveedor_id = $_POST['PROVEEDOR_ID'];
     $ubicacion_id = $_POST['UBICACION_ID'];
