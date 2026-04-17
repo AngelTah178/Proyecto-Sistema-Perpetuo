@@ -85,11 +85,17 @@
   if (isset($_POST['confirmar'])) {
 
     if (empty($_SESSION['orden'])) {
-      die("No hay productos en la orden");
+      $_SESSION['mensaje'] = "No se encuentran productos en la orden";
+      $_SESSION['tipo'] = "danger";
+      header("Location: GenerarCompra.php");
+      exit;
     }
 
     if (!isset($_SESSION['proveedor_id']) || !isset($_SESSION['almacen_id'])) {
-      die("Faltan datos de proveedor o almacén");
+      $_SESSION['mensaje'] = "Faltan datos de proveedor o almacén";
+      $_SESSION['tipo'] = "danger";
+      header("Location: GenerarCompra.php");
+      exit;
     }
 
     $proveedor_id = $_SESSION['proveedor_id'];
