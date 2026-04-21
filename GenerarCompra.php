@@ -21,6 +21,37 @@
     $almacen_id = $_POST['ALMACEN_ID'];
     $unidades = $_POST['UNIDADES'];
 
+    // ================== VALIDAR STOCK ANTES DE AGREGAR ==================
+    $stockStmt = $conn->prepare("
+      SELECT SUM(UNIDADES) as total
+      FROM stock
+      WHERE PRODUCTO_ID = ?
+    ");
+
+    $stockStmt->bind_param("i", $producto_id);
+    $stockStmt->execute();
+    $stockResult = $stockStmt->get_result()->fetch_assoc();
+
+    $stockDisponible = $stockResult['total'] ?? 0;
+
+    // VALIDAR TAMBIÉN LO QUE YA TIENE EN LA ORDEN
+    $enOrden = 0;
+
+    foreach ($_SESSION['orden'] as $item) {
+      if ($item['producto_id'] == $producto_id) {
+        $enOrden += $item['unidades'];
+      }
+    }
+
+    $totalSolicitado = $enOrden + $unidades;
+
+    if ($totalSolicitado > $stockDisponible) {
+      $_SESSION['mensaje'] = "Stock insuficiente. Disponible: $stockDisponible, ya en orden: $enOrden";
+      $_SESSION['tipo'] = "danger";
+      header("Location: GenerarCompra.php");
+      exit;
+    }
+
     $_SESSION['proveedor_id'] = $proveedor_id;
     $_SESSION['almacen_id'] = $almacen_id;
 
@@ -277,7 +308,7 @@
             <!-- UNIDADES -->
             <div class="mb-3">
               <label class="form-label">Unidades</label>
-              <input type="number" min= "0" name="UNIDADES" class="form-control input-pro" required>
+              <input type="number" min= "1" name="UNIDADES" class="form-control input-pro" required>
             </div>
 
             <button type="submit" name="agregar" class="btn btn-success w-100">
