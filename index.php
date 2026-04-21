@@ -958,7 +958,7 @@
 
                           <div class="col-md-6 mb-3">
                             <label class="form-label">Stock mínimo</label>
-                            <input type="number" name="STOCK_MINIMO" class="form-control input-pro" min="0" value="50" required>
+                            <input type="number" min="1" name="STOCK_MINIMO" class="form-control input-pro" min="0" value="50" required>
                           </div>
 
                           <div class="col-md-6 mb-3">
