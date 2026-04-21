@@ -261,35 +261,54 @@
     $check->execute();
     $res = $check->get_result()->fetch_assoc();
 
+    $stock_minimo = $_POST['STOCK_MINIMO'];
+
     if ($res['total'] > 0) {
-      $_SESSION['mensajeProducto'] = "No se puede editar: el producto ya tiene movimientos";
-      $_SESSION['tipoProducto'] = "danger";
-      header("Location: index.php");
-      exit();
+
+      // Solo permitir precio y stock mínimo
+      $stmt = $conn->prepare("
+        UPDATE productos SET 
+        PRECIO = ?, 
+        STOCK_MINIMO = ?
+        WHERE PRODUCTO_ID = ?
+      ");
+
+      $stmt->bind_param(
+        "dii",
+        $precio,
+        $stock_minimo,
+        $id
+      );
+
+    } else {
+
+      // permitir edición completa
+      $stmt = $conn->prepare("
+        UPDATE productos SET 
+        NOMBRE = ?, 
+        PRECIO = ?, 
+        MARCA_ID = ?, 
+        CATEGORIA_ID = ?, 
+        PROVEEDOR_ID = ?, 
+        LOTE_ID = ?,
+        STOCK_MINIMO = ?
+        WHERE PRODUCTO_ID = ?
+      ");
+
+      $stmt->bind_param(
+        "sdiiiiii",
+        $nombre,
+        $precio,
+        $marca,
+        $categoria,
+        $proveedor,
+        $lote,
+        $stock_minimo,
+        $id
+      );
     }
 
     // ================== ACTUALIZAR PRODUCTO ==================
-    $stmt = $conn->prepare("
-      UPDATE productos SET 
-      NOMBRE = ?, 
-      PRECIO = ?, 
-      MARCA_ID = ?, 
-      CATEGORIA_ID = ?, 
-      PROVEEDOR_ID = ?, 
-      LOTE_ID = ?
-      WHERE PRODUCTO_ID = ?
-    ");
-
-    $stmt->bind_param(
-      "sdiiiii",
-      $nombre,
-      $precio,
-      $marca,
-      $categoria,
-      $proveedor,
-      $lote,
-      $id
-    );
 
     if ($stmt->execute()) {
       // VALIDAR QUE EL PRODUCTO EXISTE
