@@ -60,6 +60,20 @@ function guardarStock($conn)
         $stmt->execute();
         $result = $stmt->get_result();
 
+        $checkOtraUbicacion = $conn->prepare("
+            SELECT STOCK_ID 
+            FROM stock 
+            WHERE PRODUCTO_ID = ? AND (ALMACEN_ID != ? OR UBICACION_ID != ?)
+        ");
+
+        $checkOtraUbicacion->bind_param("iii", $producto_id, $almacen_id, $ubicacion_id);
+        $checkOtraUbicacion->execute();
+        $resOtra = $checkOtraUbicacion->get_result();
+
+        if ($resOtra->num_rows > 0) {
+            throw new Exception("Este producto ya está registrado en otra ubicación. No puedes asignarle otra.");
+        }
+        
         if ($result->num_rows > 0) {
 
             // 
