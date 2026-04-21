@@ -1219,7 +1219,7 @@
 
                           <div class="col-md-6 mb-3">
                             <label class="form-label">Unidades</label>
-                            <input type="number" name="UNIDADES" class="form-control input-pro" required>
+                            <input type="number" min ="1" name="UNIDADES" class="form-control input-pro" required>
                           </div>
 
                           <?php $almacenes = $conn->query("SELECT ALMACEN_ID, ALMACEN FROM almacenes"); ?>
