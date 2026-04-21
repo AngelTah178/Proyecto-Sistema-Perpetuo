@@ -411,6 +411,8 @@
     }
   }
 
+  $id_actual = $_SESSION['ID_USUARIO'];
+
   // ================== PAGINACIÓN ==================
     $registros_por_pagina = 5;
 
@@ -421,7 +423,11 @@
 
     $offset = ($pagina - 1) * $registros_por_pagina;
 
-    $total_usuarios = $conn->query("SELECT COUNT(*) as total FROM usuarios")->fetch_assoc()['total'];
+    $total_usuarios = $conn->query("
+      SELECT COUNT(*) as total 
+      FROM usuarios 
+      WHERE ID_USUARIO != $id_actual
+    ")->fetch_assoc()['total'];
     $total_paginas = ceil($total_usuarios / $registros_por_pagina);
 
     $total_admins = $conn->query("SELECT COUNT(*) as total FROM usuarios WHERE ROL = 'admin'")->fetch_assoc()['total'];
@@ -514,7 +520,11 @@
   }
 
   // ================== CONSULTAS ==================
-    $usuarios = $conn->query("SELECT * FROM usuarios LIMIT $offset, $registros_por_pagina")->fetch_all(MYSQLI_ASSOC);
+    $usuarios = $conn->query("
+      SELECT * FROM usuarios 
+      WHERE ID_USUARIO != $id_actual
+      LIMIT $offset, $registros_por_pagina
+    ")->fetch_all(MYSQLI_ASSOC);
 
     $productos = $conn->query("
       SELECT 
